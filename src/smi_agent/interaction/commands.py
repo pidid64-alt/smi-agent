@@ -17,7 +17,7 @@ _NUM = re.compile(r"(?:№|#|номер\w*|вариант\w*|тем\w*|пред�
 _ORD_RX = re.compile(r"\b(" + "|".join(_ORD) + r")\w*", re.IGNORECASE)
 
 _VERBS: dict[ActionKind, re.Pattern[str]] = {
-    ActionKind.MORE_INFO: re.compile(r"раскро\w+|расскаж\w+\s+(?:больше|подробн\w+)|больше\s+информаци\w+|что\s+там\s+(?:по|с)|детал\w+|\bmore\s+(?:on|about|info)|\bexpand\b|\bdetails?\b|толығырақ", re.IGNORECASE),
+    ActionKind.MORE_INFO: re.compile(r"раскро\w+|подробн\w+|расскаж\w+\s+(?:больше|подробн\w+)|больше\s+информаци\w+|что\s+там\s+(?:по|с)|детал\w+|\bmore\s+(?:on|about|info)|\bexpand\b|\bdetails?\b|толығырақ", re.IGNORECASE),
     ActionKind.CHANGE_ANGLE: re.compile(r"(?:друго\w+|ино\w+|новы\w+)\s+(?:угол|ракурс|подач\w+)|под\s+друг\w+\s+угл\w+|\bchange\s+angle\b|\bdifferent\s+angle\b", re.IGNORECASE),
     ActionKind.REPLACE: re.compile(r"замени\w*|заменить|поменяй\w*|друго\w+\s+(?:вариант|тему|новост\w+)|\breplace\b|\bswap\b|ауыстыр\w*", re.IGNORECASE),
     ActionKind.REJECT: re.compile(r"не\s*интересн\w*|не\s+надо|не\s+нужн\w*|не\s+то\b|не\s+подход\w+|убери\w*|убрать|пропусти\w*|\bмимо\b|отклон\w+|не\s+(?:беру|берём|берем|возьму|хочу|выбираю)|\bskip\b|\breject\b|\bdrop\b|қызықсыз|керек\s+емес", re.IGNORECASE),

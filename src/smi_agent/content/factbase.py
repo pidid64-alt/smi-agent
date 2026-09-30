@@ -90,12 +90,14 @@ def brand_name(name: str) -> str:
     return re.sub(r"\s*[—–(].*$", "", name).strip() or name
 
 
-def build_factbase(s: Session, ev: Event, ver: Verification | None, *, max_facts: int = 8) -> FactBase:
+def build_factbase(s: Session, ev: Event, ver: Verification | None, *, max_facts: int = 8, know: Any = None) -> FactBase:
     arts = list(s.scalars(select(Article).where(Article.event_id == ev.id).order_by(Article.published_at)))
     by_key = {a.source.key: a for a in arts}
     src_names = {a.source.key: brand_name(a.source.name) for a in arts}
     facts: list[Fact] = []
     raw_facts = list(ver.facts) if ver and ver.facts else [{"text": f["text"], "source": f.get("source"), "support": 1} for f in (ev.features or {}).get("facts", [])]
+    if know is not None:  # факты с инструкциями для ИИ (prompt-injection) в базу не попадают
+        raw_facts = [f for f in raw_facts if not know.count("injection_patterns", f["text"])]
     for i, f in enumerate(raw_facts[:max_facts], 1):
         key = f.get("source") or ""
         support = int(f.get("support", 1))

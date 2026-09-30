@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..core.enums import ActionKind
-from ..core.errors import NotFound, ValidationFailed
+from ..core.errors import Conflict, NotFound, ValidationFailed
 from ..db.models import Article, Event, FunnelItem, Project, Proposal, UserAction, Verification
 from ..funnel.service import Cand
 from ..proposals.cards import CATEGORY_ANGLES, DEFAULT_ANGLE, build_card
@@ -57,46 +57,58 @@ class InteractionService:
         s.flush()
 
     # ------------------------------------------------------------------ текстовые команды
-    def handle_text(self, s: Session, project_id: int, actor: Actor, text: str) -> dict[str, Any]:
+    def handle_text(self, project_id: int, actor: Actor, text: str) -> dict[str, Any]:
+        """Разбор и выполнение команд. Каждая команда — отдельная короткая транзакция; генерация текста идёт вне транзакции записи."""
         parsed = parse_commands(text)
         results: list[ActionResult] = []
         for cmd in parsed.commands:
             try:
-                results.append(self.execute(s, project_id, actor, cmd))
-            except (NotFound, ValidationFailed) as e:
+                results.append(self.execute(project_id, actor, cmd))
+            except (NotFound, ValidationFailed, Conflict) as e:
                 results.append(ActionResult(cmd.slot, cmd.kind.value, False, e.message))
         return {"results": [r.__dict__ for r in results], "hint": parsed.hint, "unrecognized": parsed.unrecognized}
 
-    def execute(self, s: Session, project_id: int, actor: Actor, cmd: Command) -> ActionResult:
+    def execute(self, project_id: int, actor: Actor, cmd: Command) -> ActionResult:
         if cmd.kind in (ActionKind.SELECT, ActionKind.MODIFY):
-            return self.select(s, project_id, actor, cmd.slot, cmd.params, raw=cmd.raw)
-        if cmd.kind == ActionKind.REJECT:
-            return self.reject(s, project_id, actor, cmd.slot, cmd.params.get("reason", ""), raw=cmd.raw)
-        if cmd.kind == ActionKind.REPLACE:
-            return self.replace(s, project_id, actor, cmd.slot, raw=cmd.raw)
-        if cmd.kind == ActionKind.MORE_INFO:
-            return self.more_info(s, project_id, actor, cmd.slot, raw=cmd.raw)
-        if cmd.kind == ActionKind.CHANGE_ANGLE:
-            return self.change_angle(s, project_id, actor, cmd.slot, cmd.params.get("angle"), raw=cmd.raw)
+            return self.select(project_id, actor, cmd.slot, cmd.params, raw=cmd.raw)
+        with self.ctx.db.session() as s:
+            if cmd.kind == ActionKind.REJECT:
+                return self.reject(s, project_id, actor, cmd.slot, cmd.params.get("reason", ""), raw=cmd.raw)
+            if cmd.kind == ActionKind.REPLACE:
+                return self.replace(s, project_id, actor, cmd.slot, raw=cmd.raw)
+            if cmd.kind == ActionKind.MORE_INFO:
+                return self.more_info(s, project_id, actor, cmd.slot, raw=cmd.raw)
+            if cmd.kind == ActionKind.CHANGE_ANGLE:
+                return self.change_angle(s, project_id, actor, cmd.slot, cmd.params.get("angle"), raw=cmd.raw)
         raise ValidationFailed("Неподдерживаемая команда")
 
     # ------------------------------------------------------------------ действия
-    def select(self, s: Session, project_id: int, actor: Actor, slot: int, overrides: dict[str, Any] | None = None, *, raw: str = "") -> ActionResult:
-        p = self._by_slot(s, project_id, slot)
-        if p.status in ("selected", "executed") and p.content_pk:
-            raise ValidationFailed(f"№{slot} уже выбрано — материал создан")
+    def select(self, project_id: int, actor: Actor, slot: int, overrides: dict[str, Any] | None = None, *, raw: str = "") -> ActionResult:
+        """«Беру №N»: чтение → генерация текста (без транзакции записи) → запись материала и сигнала обучения."""
         overrides = {k: v for k, v in (overrides or {}).items() if k in ("emphasis", "emphasis_text", "language", "format", "length", "tone", "platforms", "angle")}
-        ev = s.get(Event, p.event_id)
-        siblings = [(sp, s.get(Event, sp.event_id)) for sp in self.current(s, project_id)]
-        content = self.ctx.content.create_from_proposal(s, p, overrides, actor)
-        p.status, p.resolved_at, p.resolved_by, p.overrides = "selected", self.ctx.clock.now(), actor.label, overrides
-        self.ctx.learning.record_selection(s, project_id, p, ev, siblings, overrides=overrides)
-        self._log(s, project_id, actor, ActionKind.MODIFY if overrides else ActionKind.SELECT, p, raw or f"Беру №{slot}", {"overrides": overrides, "content_id": content.content_id})
-        self.ctx.audit.log(s, actor, "proposal.select", project_id=project_id, target_type="proposal", target_id=p.id, details={"slot": slot, "content_id": content.content_id, "overrides": overrides})
-        msg = f"Беру №{slot}: «{ev.title[:80]}». Черновик {content.content_id} подготовлен для: {', '.join(v.platform for v in self.ctx.content.current_versions(s, content.id))}."
-        if overrides.get("emphasis_text"):
-            msg += f" Акцент: {overrides['emphasis_text']}."
-        return ActionResult(slot, "select", True, msg, content.content_id, p.id, {"content_pk": content.id})
+        with self.ctx.db.read() as rs:
+            p = self._by_slot(rs, project_id, slot)
+            if p.status in ("selected", "executed") and p.content_pk:
+                raise ValidationFailed(f"№{slot} уже выбрано — материал создан")
+            if p.status != "proposed":
+                raise ValidationFailed(f"№{slot} уже обработано ({p.status})")
+            pid = p.id
+            prep = self.ctx.content.prepare(rs, pid, {**({"angle": (p.overrides or {}).get("angle")} if (p.overrides or {}).get("angle") else {}), **overrides})
+        with self.ctx.db.session() as s:
+            p = s.get(Proposal, pid)
+            if p.status != "proposed":  # параллельное действие пользователя
+                raise ValidationFailed(f"№{slot} уже обработано ({p.status})")
+            ev = s.get(Event, p.event_id)
+            siblings = [(sp, s.get(Event, sp.event_id)) for sp in self.current(s, project_id)]
+            content = self.ctx.content.persist(s, p, prep, actor)
+            p.status, p.resolved_at, p.resolved_by, p.overrides = "selected", self.ctx.clock.now(), actor.label, overrides
+            self.ctx.learning.record_selection(s, project_id, p, ev, siblings, overrides=overrides)
+            self._log(s, project_id, actor, ActionKind.MODIFY if overrides else ActionKind.SELECT, p, raw or f"Беру №{slot}", {"overrides": overrides, "content_id": content.content_id})
+            self.ctx.audit.log(s, actor, "proposal.select", project_id=project_id, target_type="proposal", target_id=p.id, details={"slot": slot, "content_id": content.content_id, "overrides": overrides})
+            msg = f"Беру №{slot}: «{ev.title[:80]}». Черновик {content.content_id} подготовлен для: {', '.join(v.platform for v in self.ctx.content.current_versions(s, content.id))}."
+            if overrides.get("emphasis_text"):
+                msg += f" Акцент: {overrides['emphasis_text']}."
+            return ActionResult(slot, "select", True, msg, content.content_id, p.id, {"content_pk": content.id})
 
     def reject(self, s: Session, project_id: int, actor: Actor, slot: int, reason: str = "", *, raw: str = "") -> ActionResult:
         p = self._by_slot(s, project_id, slot)

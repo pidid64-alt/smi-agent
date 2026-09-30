@@ -7,6 +7,7 @@ SQLite: WAL, foreign_keys, busy_timeout; сессии записи старту�
 from __future__ import annotations
 
 import os
+import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -56,6 +57,7 @@ class Database:
         if self.is_sqlite:
             self._wire_sqlite(self.engine)
         self._write_engine = self.engine.execution_options(sqlite_write=True) if self.is_sqlite else self.engine
+        self._local = threading.local()
         self._read_factory = sessionmaker(bind=self.engine, expire_on_commit=False, autoflush=True)
         self._write_factory = sessionmaker(bind=self._write_engine, expire_on_commit=False, autoflush=True)
 
@@ -77,10 +79,16 @@ class Database:
             conn.exec_driver_sql("BEGIN IMMEDIATE" if immediate else "BEGIN")
 
     # ------------------------------------------------------------------ sessions
+    def in_write(self) -> bool:
+        """True, если текущий поток держит открытую транзакцию записи (недопустимо делать сетевые вызовы/LLM)."""
+        return getattr(self._local, "write_depth", 0) > 0
+
     @contextmanager
     def session(self, *, write: bool = True) -> Iterator[Session]:
         factory = self._write_factory if write else self._read_factory
         s = factory()
+        if write:
+            self._local.write_depth = getattr(self._local, "write_depth", 0) + 1
         try:
             yield s
             if write:
@@ -90,6 +98,8 @@ class Database:
             raise
         finally:
             s.close()
+            if write:
+                self._local.write_depth -= 1
 
     def read(self):
         return self.session(write=False)

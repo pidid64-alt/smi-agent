@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,21 @@ from .generator import Brief, ContentGenerator, CoreDraft
 from .render import Rendered, render_final
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class Prepared:
+    """Результат фазы подготовки: всё, что нужно записать, без обращений к БД на запись."""
+
+    proposal_id: int
+    project_id: int
+    overrides: dict[str, Any]
+    fb: FactBase
+    brief: Brief
+    core: CoreDraft
+    platform_data: dict[str, dict[str, Any]]
+
+
 ANGLE_EMPHASIS = {
     "kazakhstan": "Что это значит для Казахстана (только подтверждённые факты и без домыслов)",
     "numbers": "Акцент на цифрах: что измерено, как изменилось и откуда данные",
@@ -67,17 +83,28 @@ class ContentService:
         )  # fmt: skip
 
     # ----------------------------------------------------------------- создание
-    def create_from_proposal(self, s: Session, proposal: Proposal, overrides: dict[str, Any], actor: Actor, *, origin: str = "user") -> Content:
-        ctx = self.ctx
+    def prepare(self, s: Session, proposal_id: int, overrides: dict[str, Any]) -> Prepared:
+        """Фаза 1+2: чтение данных и генерация текста (в т.ч. вызовы LLM). Без записи в БД и вне транзакции записи."""
+        proposal = s.get(Proposal, proposal_id)
+        if proposal is None:
+            raise NotFound("Предложение не найдено")
         ev = s.get(Event, proposal.event_id)
-        proj = s.get(Project, proposal.project_id)
-        cfg = load_project_settings(proj.settings)
+        cfg = load_project_settings(s.get(Project, proposal.project_id).settings)
         ver = s.get(Verification, proposal.verification_id) if proposal.verification_id else None
-        fb = build_factbase(s, ev, ver)
+        fb = build_factbase(s, ev, ver, know=self.ctx.know)
         if not fb.facts:
             raise ValidationFailed("Недостаточно проверенных фактов для материала — выберите другую тему или раскройте подробности")
         brief = self.make_brief(s, proposal.project_id, cfg, proposal.card or {}, overrides, fb)
         core = self.gen.core(fb, brief, project_id=proposal.project_id)
+        platform_data = {platform: self.gen.adapt(platform, core, fb, brief) for platform in brief.platforms}
+        return Prepared(proposal.id, proposal.project_id, dict(overrides), fb, brief, core, platform_data)
+
+    def persist(self, s: Session, proposal: Proposal, prep: Prepared, actor: Actor, *, origin: str = "user") -> Content:
+        """Фаза 3: запись материала, версий, карточек и результатов проверок (короткая транзакция)."""
+        ctx = self.ctx
+        ev = s.get(Event, proposal.event_id)
+        cfg = load_project_settings(s.get(Project, proposal.project_id).settings)
+        fb, brief, core = prep.fb, prep.brief, prep.core
         now = ctx.clock.now()
         sens = {"topics": fb.sensitive, "political": fb.political}
         requires_manual = bool(fb.sensitive) or fb.political or bool((ev.flags or {}).get("sensitive_category"))
@@ -92,8 +119,7 @@ class ContentService:
         )  # fmt: skip
         s.add(content)
         s.flush()
-        for platform in brief.platforms:
-            data = self.gen.adapt(platform, core, fb, brief)
+        for platform, data in prep.platform_data.items():
             media = self._make_media(s, proposal.project_id, content, platform, data["format"], core, fb, cfg, ev)
             s.add(PlatformVersion(
                 content_pk=content.id, platform=platform, version=1, is_current=True, format=data["format"], title=data.get("title", core.headline), body=data["body"], hashtags=data.get("hashtags", []),
@@ -104,6 +130,20 @@ class ContentService:
         self.run_checks(s, content)
         ctx.audit.log(s, actor, "content.create", project_id=proposal.project_id, target_type="content", target_id=content.content_id, details={"generator": core.generator, "platforms": brief.platforms, "event_id": ev.id})
         return content
+
+    def create(self, project_id: int, proposal_id: int, overrides: dict[str, Any], actor: Actor, *, origin: str = "user") -> int:
+        """Трёхфазное создание материала без внешней сессии: чтение → LLM (без транзакции) → запись. Возвращает content.id."""
+        with self.ctx.db.read() as rs:
+            prep = self.prepare(rs, proposal_id, overrides)
+        with self.ctx.db.session() as ws:
+            proposal = ws.get(Proposal, proposal_id)
+            return self.persist(ws, proposal, prep, actor, origin=origin).id
+
+    def create_from_proposal(self, s: Session, proposal: Proposal, overrides: dict[str, Any], actor: Actor, *, origin: str = "user") -> Content:
+        """Удобная обёртка для кода, который уже держит сессию (тесты, эвристический режим). С включённой LLM внутри
+        транзакции записи вызывать нельзя — используйте create()."""
+        prep = self.prepare(s, proposal.id, overrides)
+        return self.persist(s, proposal, prep, actor, origin=origin)
 
     # ---------------------------------------------------------------------- медиа
     def _save_card(self, s: Session, project_id: int, img, alt: str, *, source_article_id: int | None = None) -> MediaAsset:

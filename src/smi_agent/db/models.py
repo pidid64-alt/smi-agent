@@ -785,9 +785,10 @@ class LlmCall(Base):
     provider: Mapped[str] = mapped_column(String(40), default="")
     model: Mapped[str] = mapped_column(String(80), default="")
     ok: Mapped[bool] = mapped_column(Boolean, default=True)
-    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
-    prompt_chars: Mapped[int] = mapped_column(Integer, default=0)
-    completion_chars: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(24), default="ok")  # ok | error | bad_json | schema_mismatch | budget_exceeded
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str] = mapped_column(String(300), default="")
 
 

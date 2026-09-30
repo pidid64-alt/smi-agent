@@ -68,13 +68,15 @@ class LlmService:
 
     def _log(self, project_id: int | None, task: str, status: str, res: Any = None, err: str = "") -> None:
         with self.ctx.db.session() as s:
-            s.add(LlmCall(project_id=project_id, ts=self.ctx.clock.now(), task=task, model=self.model_name, status=status, prompt_tokens=getattr(res, "prompt_tokens", 0),
+            s.add(LlmCall(project_id=project_id, ts=self.ctx.clock.now(), task=task, provider=(self.client.name if self.client else ""), model=self.model_name, ok=status == "ok", status=status, prompt_tokens=getattr(res, "prompt_tokens", 0),
                           completion_tokens=getattr(res, "completion_tokens", 0), latency_ms=getattr(res, "latency_ms", 0), error=redact(err)[:300]))
 
     def run_json(self, task: str, user: str, *, required: dict[str, type], project_id: int | None = None, system: str = SYSTEM_GUARD, max_tokens: int = 1600, temperature: float = 0.4) -> dict[str, Any] | None:
         """Возвращает проверенный словарь либо None (вызывающий код использует эвристику)."""
         if self.client is None:
             return None
+        if self.ctx.db.in_write():
+            raise RuntimeError("Вызов LLM внутри транзакции записи запрещён: он блокирует всех писателей (используйте ContentService.prepare вне транзакции)")
         if not self._budget_left():
             self._log(project_id, task, "budget_exceeded")
             return None
