@@ -1,0 +1,402 @@
+# Реестр источников по умолчанию (ТЗ §6). Это ДАННЫЕ: источники добавляются/удаляются через UI/API без правки кода.
+# verified_url: true — адрес проверен вручную 2026-09-30; false — «известный» адрес, требует проверки (см. Настройки → Источники).
+# tier: primary (первичный/официальный) | quality (качественные СМИ) | specialized (профильные) | aggregator
+# independence_group — «семья» изданий: материалы одной группы/агентства НЕ считаются независимыми подтверждениями.
+sources:
+  # ------------------------------------------------------------------ Казахстан
+  - key: nur_kz
+    name: NUR.KZ
+    kind: rss
+    url: https://www.nur.kz/rss/all.rss
+    site_url: https://www.nur.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.75
+    independence_group: nur
+    aliases: [NUR.KZ, Nur.kz, nur.kz, Нур.кз]
+    mandatory: true            # обязательный источник (ТЗ §6.1)
+    verified_url: true
+    notes: Полный текст в ленте; метки «передает NUR.KZ со ссылкой на …» используются для определения зависимых публикаций.
+  - key: kazinform
+    name: Kazinform
+    kind: rss
+    url: https://www.inform.kz/rss/rus.xml
+    site_url: https://www.inform.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.85
+    independence_group: kazinform
+    aliases: [Kazinform, Казинформ, inform.kz, Kazinform International News Agency]
+    is_wire: true
+    verified_url: false
+    notes: На 2026-09-30 по этому адресу отдавались материалы 2024 года — возможно, лента устарела. Проверьте актуальный адрес.
+  - key: khabar_24kz
+    name: 24KZ
+    kind: rss
+    url: https://24.kz/ru/?format=feed&type=rss
+    site_url: https://24.kz
+    country: KZ
+    languages: [ru, kk]
+    tier: quality
+    reliability: 0.8
+    independence_group: khabar
+    aliases: [24KZ, 24.kz, Хабар, Хабар 24]
+    verified_url: false
+  - key: tengrinews
+    name: Tengrinews
+    kind: rss
+    url: https://tengrinews.kz/news.rss
+    site_url: https://tengrinews.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.75
+    independence_group: tengri
+    aliases: [Tengrinews, Tengrinews.kz, Тенгриньюс, tengrinews.kz]
+    verified_url: false
+  - key: informburo
+    name: Informburo.kz
+    kind: rss
+    url: https://informburo.kz/rss
+    site_url: https://informburo.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.72
+    independence_group: informburo
+    aliases: [Informburo, Informburo.kz, Информбюро]
+    verified_url: false
+  - key: zakon_kz
+    name: Zakon.kz
+    kind: rss
+    url: https://www.zakon.kz/rss.xml
+    site_url: https://www.zakon.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.72
+    independence_group: zakon
+    aliases: [Zakon.kz, zakon.kz, Закон.kz]
+    category_hint: law
+    verified_url: false
+  - key: kursiv
+    name: Kursiv.media (Курсив)
+    kind: rss
+    url: https://kz.kursiv.media/feed/
+    site_url: https://kz.kursiv.media
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.85
+    independence_group: kursiv
+    aliases: [Kursiv, Курсив, Kursiv.media, kursiv.kz]
+    category_hint: business
+    verified_url: true
+    notes: WordPress-лента, в описании — анонс (не полный текст).
+  - key: vlast
+    name: Vlast.kz
+    kind: rss
+    url: https://vlast.kz/rss/
+    site_url: https://vlast.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.78
+    independence_group: vlast
+    aliases: [Vlast, Vlast.kz, Власть]
+    verified_url: false
+  - key: kapital
+    name: Kapital.kz
+    kind: rss
+    url: https://kapital.kz/rss
+    site_url: https://kapital.kz
+    country: KZ
+    languages: [ru]
+    tier: quality
+    reliability: 0.78
+    independence_group: kapital
+    aliases: [Kapital, Kapital.kz, Капитал]
+    category_hint: business
+    verified_url: false
+  # ------------------------------------------------------------ международные СМИ
+  - key: bbc_world
+    name: BBC News — World
+    kind: rss
+    url: https://feeds.bbci.co.uk/news/world/rss.xml
+    site_url: https://www.bbc.com/news
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.92
+    independence_group: bbc
+    aliases: [BBC, BBC News, Би-би-си]
+    timezone: UTC
+    verified_url: false
+  - key: bbc_tech
+    name: BBC News — Technology
+    kind: rss
+    url: https://feeds.bbci.co.uk/news/technology/rss.xml
+    site_url: https://www.bbc.com/news/technology
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.92
+    independence_group: bbc
+    aliases: [BBC, BBC News]
+    category_hint: tech
+    timezone: UTC
+    verified_url: false
+  - key: bbc_business
+    name: BBC News — Business
+    kind: rss
+    url: https://feeds.bbci.co.uk/news/business/rss.xml
+    site_url: https://www.bbc.com/news/business
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.92
+    independence_group: bbc
+    aliases: [BBC, BBC News]
+    category_hint: business
+    timezone: UTC
+    verified_url: false
+  - key: guardian_world
+    name: The Guardian — World
+    kind: rss
+    url: https://www.theguardian.com/world/rss
+    site_url: https://www.theguardian.com
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.88
+    independence_group: guardian
+    aliases: [The Guardian, Guardian, Гардиан]
+    timezone: UTC
+    verified_url: false
+  - key: guardian_tech
+    name: The Guardian — Technology
+    kind: rss
+    url: https://www.theguardian.com/technology/rss
+    site_url: https://www.theguardian.com/technology
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.88
+    independence_group: guardian
+    aliases: [The Guardian, Guardian]
+    category_hint: tech
+    timezone: UTC
+    verified_url: false
+  - key: cnbc_top
+    name: CNBC — Top News
+    kind: rss
+    url: https://www.cnbc.com/id/100003114/device/rss/rss.html
+    site_url: https://www.cnbc.com
+    country: US
+    languages: [en]
+    tier: quality
+    reliability: 0.85
+    independence_group: cnbc
+    aliases: [CNBC]
+    category_hint: finance
+    timezone: UTC
+    verified_url: false
+  - key: bloomberg_markets
+    name: Bloomberg — Markets
+    kind: rss
+    url: https://feeds.bloomberg.com/markets/news.rss
+    site_url: https://www.bloomberg.com
+    country: US
+    languages: [en]
+    tier: quality
+    reliability: 0.92
+    independence_group: bloomberg
+    aliases: [Bloomberg, Блумберг]
+    paywalled: true
+    category_hint: finance
+    timezone: UTC
+    verified_url: false
+    notes: Только заголовки/анонсы (платный доступ). Полный текст не запрашивается.
+  - key: ft_home
+    name: Financial Times
+    kind: rss
+    url: https://www.ft.com/rss/home
+    site_url: https://www.ft.com
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.93
+    independence_group: ft
+    aliases: [Financial Times, FT]
+    paywalled: true
+    category_hint: finance
+    timezone: UTC
+    verified_url: false
+    notes: Только заголовки/анонсы (платный доступ).
+  - key: reuters
+    name: Reuters (news sitemap)
+    kind: sitemap
+    url: https://www.reuters.com/arc/outboundfeeds/news-sitemap-index/?outputType=xml
+    site_url: https://www.reuters.com
+    country: GB
+    languages: [en]
+    tier: quality
+    reliability: 0.95
+    independence_group: reuters
+    aliases: [Reuters, Рейтер, Рейтерс]
+    is_wire: true
+    paywalled: true
+    timezone: UTC
+    config: {max_children: 1}
+    verified_url: false
+    notes: Публичного RSS у Reuters нет. Для полноценного доступа — лицензированный Reuters Connect. Sitemap даёт заголовки и время публикации.
+  - key: ap_news
+    name: Associated Press
+    kind: manual
+    url: ""
+    site_url: https://apnews.com
+    country: US
+    languages: [en]
+    tier: quality
+    reliability: 0.95
+    independence_group: ap
+    aliases: [Associated Press, AP, Ассошиэйтед Пресс]
+    is_wire: true
+    enabled: false
+    verified_url: false
+    notes: Публичного RSS у AP нет. Подключение — через лицензионный AP Media API (коммерческий), добавьте адрес в настройках источника.
+  # ------------------------------------------------------ профильные (по темам)
+  - key: techcrunch
+    name: TechCrunch
+    kind: rss
+    url: https://techcrunch.com/feed/
+    site_url: https://techcrunch.com
+    country: US
+    languages: [en]
+    tier: specialized
+    reliability: 0.8
+    independence_group: techcrunch
+    aliases: [TechCrunch]
+    category_hint: tech
+    timezone: UTC
+    verified_url: false
+  - key: theverge
+    name: The Verge
+    kind: atom
+    url: https://www.theverge.com/rss/index.xml
+    site_url: https://www.theverge.com
+    country: US
+    languages: [en]
+    tier: specialized
+    reliability: 0.8
+    independence_group: vox
+    aliases: [The Verge, Verge]
+    category_hint: tech
+    timezone: UTC
+    verified_url: false
+  - key: arstechnica
+    name: Ars Technica
+    kind: rss
+    url: https://feeds.arstechnica.com/arstechnica/index
+    site_url: https://arstechnica.com
+    country: US
+    languages: [en]
+    tier: specialized
+    reliability: 0.85
+    independence_group: conde
+    aliases: [Ars Technica]
+    category_hint: tech
+    timezone: UTC
+    verified_url: false
+  - key: electrek
+    name: Electrek (электромобили)
+    kind: rss
+    url: https://electrek.co/feed/
+    site_url: https://electrek.co
+    country: US
+    languages: [en]
+    tier: specialized
+    reliability: 0.72
+    independence_group: nineto5
+    aliases: [Electrek]
+    category_hint: auto
+    timezone: UTC
+    verified_url: false
+  - key: sciencedaily
+    name: ScienceDaily
+    kind: rss
+    url: https://www.sciencedaily.com/rss/all.xml
+    site_url: https://www.sciencedaily.com
+    country: US
+    languages: [en]
+    tier: specialized
+    reliability: 0.8
+    independence_group: sciencedaily
+    aliases: [ScienceDaily]
+    category_hint: science
+    timezone: UTC
+    verified_url: false
+  - key: spacecom
+    name: Space.com
+    kind: rss
+    url: https://www.space.com/feeds/all
+    site_url: https://www.space.com
+    country: US
+    languages: [en]
+    tier: specialized
+    reliability: 0.75
+    independence_group: future
+    aliases: [Space.com]
+    category_hint: science
+    timezone: UTC
+    verified_url: false
+  # ---------------------------------------------------------- первичные (официальные)
+  - key: who_news
+    name: ВОЗ (WHO) — новости
+    kind: rss
+    url: https://www.who.int/rss-feeds/news-english.xml
+    site_url: https://www.who.int
+    country: INT
+    languages: [en]
+    tier: primary
+    reliability: 0.97
+    independence_group: who
+    aliases: [WHO, ВОЗ, World Health Organization]
+    is_official: true
+    media_policy: attribution
+    category_hint: health
+    timezone: UTC
+    verified_url: false
+  - key: un_news
+    name: UN News
+    kind: rss
+    url: https://news.un.org/feed/subscribe/en/news/all/rss.xml
+    site_url: https://news.un.org
+    country: INT
+    languages: [en]
+    tier: primary
+    reliability: 0.95
+    independence_group: un
+    aliases: [UN News, ООН, United Nations]
+    is_official: true
+    media_policy: attribution
+    timezone: UTC
+    verified_url: false
+  - key: fed_press
+    name: Federal Reserve — пресс-релизы
+    kind: rss
+    url: https://www.federalreserve.gov/feeds/press_all.xml
+    site_url: https://www.federalreserve.gov
+    country: US
+    languages: [en]
+    tier: primary
+    reliability: 0.98
+    independence_group: fed
+    aliases: [Federal Reserve, ФРС, Fed]
+    is_official: true
+    media_policy: official_free
+    category_hint: finance
+    timezone: UTC
+    verified_url: false

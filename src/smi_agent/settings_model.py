@@ -88,6 +88,8 @@ class MonitoringSettings(BaseModel):
     poll_interval_min: int = 15
     source_stale_hours: float = 12.0
     dedup_window_hours: int = 72
+    max_item_age_days: int = 7
+    fulltext_per_poll: int = 8  # лимит дозагрузки полных текстов за один опрос источника
 
 
 class ProjectSettings(BaseModel):

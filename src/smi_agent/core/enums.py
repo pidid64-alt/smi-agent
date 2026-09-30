@@ -121,3 +121,13 @@ VERIFICATION_LABELS = {
     VerificationStatus.NEEDS_CHECK: "требуется дополнительная проверка",
     VerificationStatus.REJECTED: "не подтверждено",
 }
+
+
+RELATION_LABELS = {
+    Relation.ORIGINAL.value: "оригинал",
+    Relation.DUPLICATE.value: "дубль",
+    Relation.REPRINT.value: "перепечатка",
+    Relation.TRANSLATION.value: "перевод",
+    Relation.UPDATE.value: "обновление",
+    Relation.INDEPENDENT.value: "независимая публикация",
+}

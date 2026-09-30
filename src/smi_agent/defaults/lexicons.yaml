@@ -1,0 +1,80 @@
+# Лексиконы эвристик (ru/kk/en). Данные, а не код: правятся без изменения ядра. Элементы — подстроки/префиксы
+# слов в нижнем регистре; «$» на конце — слово целиком.
+hedges:        # неподтверждённая/слабая информация
+  [по неподтвержденным, по неподтверждённым, по слухам, слухи, якобы, предположительно, по непроверенным, как утверждается,
+   по утверждению, анонимн источник, неназванн источник, знакомый с ситуацией, не подтвердил, не подтверждает,
+   официально не подтверждено, опровергл, опровергает, фейк, болжам, қауесет, расталмаған, растамады,
+   reportedly, allegedly, rumor, rumour, unconfirmed, unverified, anonymous source, people familiar, sources say,
+   claims$, denied, denies, debunked, fake news]
+clickbait:
+  [шок, шокирующ, сенсаци, вы не поверите, не поверите, срочно!, срочно:, взорвал сеть, взорвал интернет, врачи в шоке,
+   этого никто не ожидал, секрет, лайфхак, жесть, ужас, ужасающ, скандальн, невероятн, вот что случилось, что произошло дальше,
+   вы ахнете, эксперты в шоке, никто не знал, страшная правда, шок-контент, таң қалдырды, сенсация,
+   you won't believe, you will not believe, shocking, jaw-dropping, this one trick, what happened next, mind-blowing,
+   doctors hate, gone wrong, will blow your mind, goes viral, went viral]
+ads:
+  [на правах рекламы, реклама, рекламный, промокод, партнерский материал, партнёрский материал, партнерский проект, спецпроект,
+   пресс-релиз компании, erid, скидка, скидки, акция, распродаж, купить, закажите, жарнама, жарнамалық,
+   advertorial, sponsored, paid content, promoted, partner content, promo code, discount, buy now, limited offer]
+opinion:
+  [считает, по мнению, на наш взгляд, эксперт полагает, полагает, убежден, убеждён, прогнозирует, возможно, вероятно, скорее всего,
+   может привести, колонка, мнение, блог, авторская колонка, интервью, комментарий, пікір, болжайды, ойынша,
+   opinion, analysis:, commentary, editorial, column, we think, in my view, could lead, might, may lead]
+controversy:   # потенциал обсуждения
+  [скандал, протест, критик, спор, запрет, запретил, штраф, подорожан, повышени цен, дефицит, отставк, расследован, обвин, конфликт,
+   недовольств, петици, митинг, санкци, коррупци, разоблач, жалоб, оспор, тартыс, наразылық, айыптал,
+   scandal, protest, criticism, controvers, ban$, banned, lawsuit, backlash, outrage, resign, investigat, accus, dispute, corruption, clash]
+practical:     # практическая ценность для аудитории
+  [тариф, цена, цены, налог, пособие, выплат, кредит, ипотек, пенси, субсид, льгот, штраф, курс, инфляци, бензин, топлив, школ, поликлиник,
+   вакцин, вступает в силу, вступил в силу, с 1 января, с 1 октября, с 1 июля, обязательн, правила, справк, проезд, отключен, погода,
+   как получить, как оформить, что изменится, документ, регистрац, лимит, комиссия, зарплат, ставк, төлем, жеңілдік, зейнетақы, ереже, өзгеріс,
+   what changes, new rules, how to, tax$, benefit, prices, fee$, deadline, mandatory, takes effect, goes into effect, recall, warning, safety]
+scale:
+  [млрд, трлн, миллиард, триллион, миллион, тысяч, всей страны, по всей стране, по всему миру, рекорд, крупнейш, исторический, историческ,
+   массов, беспрецедентн, миллионы, рекордн, масштабн, ірі, рекорд, тарихи,
+   billion, trillion, million, record, largest, biggest, historic, nationwide, worldwide, global, unprecedented, massive, landmark]
+novelty:
+  [впервые, первый в, первая в, первое в, новый, новая, новое, запустил, запустила, представил, представила, анонсировал, открыл, открыт,
+   презентовал, выпустил, дебют, новинк, алғаш, жаңа, таныстырды, іске қосты,
+   unveil, launch, first$, first-ever, introduces, announced, debut, new$, release, rolls out, reveals]
+followup:      # признаки «продолжения» уже известной темы (§51)
+  [продолжение, новые подробности, обновлено, update:, updated, latest:, new details, уточнил, дополнил, спустя, вновь, снова, опять, ещё раз]
+breaking:
+  [срочно, молния, только что, breaking, just in, developing, жаңалық жаңарып, шұғыл]
+attribution_markers:   # «передает X», «со ссылкой на X», «по данным X» → зависимая публикация
+  [со ссылкой на, ссылаясь на, передает, передаёт, сообщает агентство, сообщило агентство, по информации, по данным, как сообщает, как передает,
+   как передаёт, пишет, сообщил телеканал, сообщает издание, cited by, according to, citing, reported by, told reuters, told ap, as reported by, via$,
+   сілтеме жасап, хабарлайды, мәліметінше, дереккөзге сүйене]
+official_markers:
+  [пресс-служб, официальн, заявил министр, заявили в министерстве, указ, постановлени, приказ, опубликовал документ, на сайте ведомства,
+   пресс-релиз, sec filing, press release, official statement, ministry said, spokesperson, regulator said, filing shows]
+quote_intro: [заявил, заявила, сказал, сказала, отметил, отметила, подчеркнул, подчеркнула, рассказал, рассказала, по словам, добавил, пояснил, айтты, атап өтті, said, says, told, stated, added, noted, according to]
+sensitive_topics:     # темы, для которых ВСЕГДА требуется ручное подтверждение (§39, §53)
+  elections: [выбор, избирател, голосован, кандидат, референдум, сайлау, election, ballot, candidate, referendum, voting]
+  political_figures: [президент, премьер-министр, депутат, министр, партия, оппозици, митинг, санкци, парламент, саясат, party, opposition, parliament, prime minister, sanction]
+  conflict_war: [война, вооружённ, вооруженн, боевые действия, обстрел, ракетный удар, вторжение, теракт, согыс, war$, invasion, airstrike, missile strike, terror, attack on]
+  casualties: [погиб, жертв, пострада, смерть, убит, қаза, killed, dead, death toll, victims, casualties, fatal]
+  religion_ethnic: [религи, вероисповед, этническ, национальн меньшинств, межнациональн, мигрант, дін, ұлт, religion, ethnic, minority, migrant]
+  crime_minors: [несовершеннолетн, подросток, ребёнок пострадал, насили, изнасил, суицид, самоубийств, жасөспірім, suicide, minor$, abuse, rape]
+  extremism: [экстремизм, экстремист, терроризм, запрещённая организация, радикал, экстремизм, extremis, terroris, radical]
+  health_advice: [лечение, диагноз, лекарство от, препарат для лечения, вылечить, treatment, cure$, diagnos, miracle drug]
+  investment_advice: [инвестируйте, купите акции, гарантированный доход, вложить деньги, buy stock, guaranteed return, invest now, financial advice]
+  legal_accusation: [обвиняется в, подозревается в, виновен, мошенник, преступник, accused of, suspected of, convicted, fraudster, criminal$]
+political_agitation:   # недопустимо в собственных текстах (§53)
+  [голосуйте за, проголосуйте за, поддержите кандидата, лучший кандидат, единственный достойн, должны проголосовать, не голосуйте, наш кандидат,
+   победит на выборах, выиграет выборы, проиграет выборы, прогноз на выборы, вступайте в партию, долой, да здравствует, сайлауда жеңеді, дауыс беріңіз,
+   vote for, vote against, support the candidate, will win the election, will lose the election, election prediction, join the party, down with]
+opinion_in_own_text:   # оценочные конструкции, которые нельзя выдавать за факты источников
+  [безусловно, очевидно, несомненно, к сожалению, к счастью, позор, катастрофа, провал, триумф, гениальн, ужасн, преступн, скандальн,
+   undoubtedly, obviously, shameful, disaster, fiasco, triumph, brilliant, terrible, criminal]
+injection_patterns:     # prompt-injection в загруженном тексте: помечаем и не передаём в LLM как инструкции
+  [игнорируй предыдущие, игнорируй все предыдущие, забудь предыдущие, забудь все инструкции, ты теперь, системный промпт, system prompt,
+   ignore previous, ignore all previous, ignore the above, disregard previous, disregard all, forget your instructions, you are now,
+   new instructions:, act as, jailbreak, developer mode, reveal your prompt, print your instructions, <|im_start|>, <|system|>, [inst], ### instruction,
+   отправь секрет, выведи токен, send the api key, exfiltrate]
+unsafe_url_hints: [bit.ly, tinyurl, t.co/, goo.gl, clck.ru, cutt.ly]
+low_value_sections: [реклама, афиша, гороскоп, кроссворд, погода на неделю, рецепт, лотерея, horoscope, crossword, recipe, lottery, advertorial]
+wire_names:     # информагентства: ссылка на них означает производную публикацию (цепочка «передает … со ссылкой на …»)
+  [reuters, рейтер, associated press, ассошиэйтед, afp, agence france, франс пресс, bloomberg, блумберг, тасс, риа новости, интерфакс, interfax,
+   xinhua, синьхуа, anadolu, анадолу, dpa, efe, kyodo, pti, ikomek, икомек, kazinform, казинформ, bns, лента.ру, ria novosti, tass,
+   қазақпарат, казтаг, kaztag, sputnik, спутник, ани новости, caravan, caravanserai]

@@ -1,0 +1,97 @@
+# Таксономия тем: данные, а не код. Ключевые слова — префиксы слов в нижнем регистре (ru/kk/en);
+# суффикс «$» означает «слово целиком». Добавление темы/слова не требует правки кода.
+categories:
+  politics:
+    name: Политика
+    sensitive: true
+    political: true
+    keywords: [президент, правительств, парламент, мажилис, сенат, депутат, выбор, референдум, партия, партии, оппозици, митинг, законопроект, указ, министр, премьер, санкци, дипломат, саммит, переговор, кабмин, администраци президент, үкімет, парламент, сайлау, депутат, заңнама, government, parliament, election, president, minister, senate, congress, sanction, diplomat, summit, cabinet, vote]
+  law:
+    name: Право и суд
+    keywords: [суд, приговор, прокуратур, закон, кодекс, нормативн, штраф, иск, адвокат, следствен, расследован, арест, задержан, уголовн, административн, мвд, полици, соту, сот, үкім, заң, айыппұл, court, lawsuit, judge, verdict, prosecutor, regulator, fine$, ruling]
+  economy:
+    name: Экономика
+    keywords: [экономик, ввп, инфляци, ставк, бюджет, налог, тариф, цен, зарплат, доход, безработиц, импорт, экспорт, торговл, дефицит, субсиди, пенси, пособи, курс, девальвац, рецесси, экономика, инфляция, баға, бюджет, салық, жалақы, тариф, экспорт, gdp, inflation, economy, tariff, budget, unemployment, trade, recession, wage, subsid, prices]
+  finance:
+    name: Финансы и рынки
+    keywords: [банк, кредит, ипотек, депозит, биржа, акци, облигаци, валют, доллар, евро, тенге, теңге, рубл, юань, нацбанк, базовая ставка, фонд, инвест, капитализац, дивиденд, криптовалют, биткоин, bitcoin, фрс, ecb, kase, kaspi, fed$, stock, bond, bank, market, currency, dollar, crypto, ethereum, interest rate, ipo, nasdaq, dow jones, s&p, oil price]
+  business:
+    name: Бизнес и компании
+    keywords: [компани, корпораци, бизнес, предприниматель, стартап, сделк, слияни, поглощени, приобрел, выручк, прибыл, убыт, акционер, холдинг, завод, производств, запустил, инвестиц, самрук, казмунай, казатом, company, corporation, startup, merger, acquisition, revenue, profit, ceo, earnings, layoffs, ipo]
+  energy:
+    name: Энергетика и сырьё
+    keywords: [нефть, нефти, газ, бензин, дизель, топлив, электроэнерг, электростанц, атомн, аэс, урана, уран, уголь, опек, opec, добыч, месторожден, баррел, трубопровод, керосин, возобновляем, солнечн, ветровая, мұнай, газ, энергия, oil, gas$, crude, energy, nuclear, uranium, pipeline, refinery, renewable, solar, wind power]
+  ai:
+    name: Искусственный интеллект
+    keywords: [искусственн интеллект, нейросет, нейронн, ии$, chatgpt, openai, gemini, claude, llm, языков модел, генеративн, машинн обучени, робот, дипфейк, deepfake, чат-бот, чатбот, anthropic, нейро, жасанды интеллект, ai$, artificial intelligence, machine learning, generative, chatbot, large language, gpt, copilot, deepmind, xai, mistral, agentic]
+  tech:
+    name: Технологии
+    keywords: [технолог, смартфон, iphone, android, приложени, гаджет, процессор, чип, полупроводник, nvidia, apple, google, microsoft, samsung, meta$, интернет, кибер, хакер, утечк данных, 5g, спутник, starlink, цифров, платформ, софт, программн, облачн, дата-центр, стартап, technology, smartphone, chip, semiconductor, software, cyber, hack, breach, data center, cloud, app$, device, quantum]
+  auto:
+    name: Авто и транспорт
+    keywords: [автомобил, авто$, электромобил, электрокар, машин, tesla, тесла, byd, toyota, hyundai, chery, lada, автопром, водител, дорог, трасс, пдд, гибрид, зарядк, беспилотн, такси, зарядн, суперчарджер, supercharger, charging, ev$, car$, cars$, vehicle, electric vehicle, automaker, autonomous, driver, көлік, автокөлік]
+  transport:
+    name: Транспорт и инфраструктура
+    keywords: [автобус, трамвай, метро, станци метро, пассажиропоток, общественн транспорт, маршрут, проезд, авиа, самолёт, самолет, рейс, аэропорт, air astana, железн дорог, поезд, жд$, вокзал, трасс, дорожн, мост, развязк, автомагистрал, порт, логистик, перевозк, airline, flight, airport, railway, train, boeing, airbus, bus$, metro, subway, tram, highway, bridge, logistics, жол, көпір, әуежай, пойыз]
+  science:
+    name: Наука и космос
+    keywords: [учён, учен, исследовани, открыти, наук, научн, эксперимент, космос, космическ, nasa, spacex, ракет, спутник, планет, марс, луна, телескоп, астроном, физик, хими, биолог, генетик, днк, климат, ископаем, палеонтолог, динозавр, вирус, лаборатор, байконур, ғалым, зерттеу, ғарыш, scientist, research, study finds, discovery, space, rocket, nasa, telescope, astronom, physics, biology, genome, climate, fossil, experiment, quantum]
+  health:
+    name: Здоровье
+    keywords: [здоровь, болезн, заболеван, вакцин, врач, больниц, поликлиник, лекарств, препарат, диагноз, эпидеми, пандеми, грипп, корь, рак, диабет, вич, воз$, минздрав, медицин, клиник, терапи, денсаулық, ауру, вакцина, емхана, health, disease, vaccine, doctor, hospital, drug, medicine, outbreak, epidemic, pandemic, who$, cancer, diabetes, clinical trial, fda]
+  education:
+    name: Образование
+    keywords: [школ, школьник, учител, педагог, студент, вуз, университет, колледж, образован, ент$, экзамен, гранты, стипенди, детсад, детск сад, дошкольн, мектеп, оқушы, университет, білім, school, student, teacher, university, education, exam, scholarship, college]
+  society:
+    name: Общество
+    keywords: [жител, населен, семь, дет, молодёж, молодеж, пенсионер, жкх, коммунальн, отключен, соцсет, волонтёр, волонтер, благотворительн, миграци, мигрант, переселен, трудов, профсоюз, социальн, общественн, тұрғын, отбасы, жастар, residents, society, family, children, youth, pensioner, social, migration, charity, protest]
+  realty:
+    name: Недвижимость и ЖКХ
+    keywords: [недвижимост, квартир, жиль, новостройк, застройщик, аренд, ипотек, риелтор, стройк, строительств, долевое, коммунальн, жкх, тариф, үй-жай, пәтер, тұрғын үй, real estate, housing, apartment, mortgage, rent$, construction, developer, property]
+  incident:
+    name: Происшествия
+    sensitive: true
+    keywords: [пожар, взрыв, авария, дтп, погиб, жертв, пострада, землетрясен, наводнен, паводок, обрушен, крушен, катастроф, чрезвычайн, мчс, эвакуац, теракт, стрельб, убийств, похищен, ограблен, төтенше, өрт, жарылыс, апат, қаза, fire$, explosion, crash, accident, killed, dead, victims, earthquake, flood, collapse, disaster, evacuat, shooting, attack]
+  international:
+    name: Мир
+    keywords: [сша, китай, росси, евросоюз, европ, нато, оон, g20, g7, брикс, шос, снг, украин, ближн восток, израил, газа, иран, индия, япони, турци, британи, герман, франци, трамп, байден, си цзиньпин, путин, зеленск, eu$, nato, un$, usa, u.s., china, russia, ukraine, israel, iran, india, japan, turkey, britain, germany, france, trump, biden, xi jinping, putin, brics, war$, ceasefire]
+  unusual:
+    name: Необычное
+    keywords: [необычн, удивительн, курьез, рекорд, гиннес, найден, обнаружен, аномали, загадк, впервые в истории, странн, уникальн, редк, древн, археолог, unusual, strange, bizarre, record-breaking, guinness, mysterious, ancient, archaeolog, rare, weird, odd$, quirky, discovered, first time in history]
+  sport:
+    name: Спорт
+    keywords: [спорт, футбол, хоккей, бокс, олимпи, чемпионат, турнир, матч, сборная, гол$, теннис, борьба, единоборств, мма, ufc, уефа, фифа, спортсмен, тренер, біріншілік, құрама, football, soccer, olympic, championship, tournament, match$, nba, nfl, tennis, boxing, coach, athlete, fifa, uefa, goal$]
+  culture:
+    name: Культура и шоу
+    keywords: [фильм, кино, сериал, премьер, театр, музык, концерт, альбом, певец, певиц, актёр, актер, актрис, фестиваль, выставк, музей, книг, писател, звезд, шоу$, блогер, тикток, мәдениет, кино, концерт, әнші, film, movie, series, music, concert, album, singer, actor, festival, exhibition, museum, book$, celebrity, tiktok, oscar, grammy]
+  other:
+    name: Прочее
+    keywords: []
+
+# Макро-направления, по которым «5 предложений» строятся разнообразно (ТЗ §15). Это мягкий ориентир, а не квота:
+# если в направлении нет достойной темы — слот не заполняется слабой темой.
+themes:
+  - {id: kz, name: Казахстан, geo_bucket: KZ}
+  - {id: ai_tech, name: ИИ и технологии, categories: [ai, tech]}
+  - {id: auto, name: Авто и транспорт, categories: [auto, transport]}
+  - {id: economy, name: Экономика и бизнес, categories: [economy, finance, business, energy, realty]}
+  - {id: science_world, name: Наука, мир, необычное, categories: [science, unusual, international, health]}
+
+# Подтемы (для обучения профиля): если найдено слово — подтема добавляется к событию.
+subtopics:
+  electric_vehicles: [электромобил, электрокар, tesla, тесла, byd, зарядк, electric vehicle, ev$]
+  generative_ai: [chatgpt, openai, генеративн, языков модел, llm, gemini, claude, generative]
+  cybersecurity: [кибер, хакер, утечк, фишинг, вирус-вымогател, cyber, hack, breach, ransomware]
+  space: [космос, космическ, nasa, spacex, ракет, марс, телескоп, ғарыш, space, rocket, telescope]
+  oil_gas: [нефть, нефти, опек, баррел, газ, opec, crude, oil price]
+  banking: [банк, кредит, депозит, ипотек, нацбанк, bank, loan, deposit, mortgage]
+  currency: [тенге, теңге, доллар, курс валют, девальвац, dollar, exchange rate, currency]
+  housing: [квартир, недвижимост, аренд, застройщик, жиль, housing, apartment, rent$]
+  tariffs_prices: [тариф, цен, инфляци, подорожан, prices, inflation, tariff]
+  education_exams: [ент$, экзамен, школ, вуз, грант, exam, school, university]
+  healthcare: [вакцин, больниц, поликлиник, минздрав, здравоохранен, vaccine, hospital]
+  startups: [стартап, венчур, инвестиционн раунд, startup, venture, funding round]
+  aviation: [авиа, самолёт, самолет, рейс, аэропорт, air astana, airline, flight, airport]
+  railways: [железн дорог, поезд, вокзал, railway, train]
+  agriculture: [урожай, зерно, пшениц, фермер, сельск, аграр, harvest, wheat, farm]
+  mining_metals: [уран, медь, золот, металлург, добыч, uranium, copper, gold, mining]
