@@ -70,11 +70,11 @@ class SecretStore:
         path = Path(self.settings.data_dir) / "master.key"
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            with os.fdopen(fd, "w") as f:
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)  # 0600 действует на POSIX; на Windows права наследуются от каталога
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(generate_key_entry("dev1"))
             log.warning("Создан dev-ключ шифрования %s (не для production)", path)
-        return path.read_text().strip()
+        return path.read_text(encoding="utf-8-sig").strip()  # -sig: файл могли пересохранить в Блокноте (BOM)
 
     # ---------------------------------------------------------------- crypto
     @staticmethod

@@ -1,0 +1,9 @@
+# Скрипты запуска хранятся с теми окончаниями строк, с которыми их исполняет ОС, — независимо от core.autocrlf.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+# Пакетные файлы Windows — строго CRLF, побайтно как в репозитории (ZIP-архив с GitHub тоже не меняет их).
+*.cmd       -text
+*.bat       -text
+# Бинарные ресурсы
+*.png       binary
+*.ttf       binary

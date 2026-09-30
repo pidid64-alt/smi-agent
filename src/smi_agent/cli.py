@@ -7,7 +7,9 @@ import getpass
 import json
 import logging
 import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 from sqlalchemy import select
@@ -74,10 +76,61 @@ def cmd_init(a: argparse.Namespace) -> None:
         print("Внимание: SMI_MASTER_KEYS не задан — создан локальный dev-ключ (data/master.key). Для production: smi-agent keys generate")
 
 
+DEMO_MARKER = ".smi-demo"
+
+
+def _is_loopback(host: str) -> bool:
+    return host in ("127.0.0.1", "localhost", "::1")
+
+
+def _fresh_demo_dir(root: Path) -> None:
+    """Пустой каталог под данные демо. Чужие файлы не трогаем: очищается только каталог с нашей меткой."""
+    if root.exists():
+        if not root.is_dir() or (not (root / DEMO_MARKER).exists() and any(root.iterdir())):
+            sys.exit(f"Каталог {root} не пуст и создан не демо-режимом — укажите другой --demo-dir")
+        try:
+            shutil.rmtree(root)
+        except OSError as e:
+            sys.exit(f"Не удалось очистить {root}: {e}. Возможно, демо уже запущено в другом окне — остановите его (Ctrl+C) и повторите")
+    root.mkdir(parents=True)
+    (root / DEMO_MARKER).write_text("Данные демо-режима smi-agent (вымышленные новости). Каталог можно удалять.\n", encoding="utf-8")
+
+
+def _prepare_demo(a: argparse.Namespace) -> tuple[Path, bool]:
+    """Окружение демо в текущем процессе: без bash и ручных переменных окружения — одинаково на Windows, Linux и macOS.
+
+    Возвращает (каталог данных, используется ли общеизвестный пароль по умолчанию).
+    """
+    from .config import get_settings
+    from .demo.seed import DEFAULT_DEMO_PASSWORD, demo_password
+
+    st = get_settings()
+    if st.is_production:
+        sys.exit("Демо запрещено при SMI_ENV=production (проверьте переменные окружения и файл .env в текущей папке)")
+    is_default = demo_password(st) == DEFAULT_DEMO_PASSWORD
+    if not _is_loopback(a.host) and is_default:
+        sys.exit("Демо с общеизвестным паролем нельзя открывать в сеть: оставьте --host 127.0.0.1 или задайте свой SMI_DEMO_PASSWORD")
+    root = Path(a.demo_dir).expanduser().resolve() if a.demo_dir else Path(tempfile.gettempdir()) / "smi-agent-demo"
+    _fresh_demo_dir(root)
+    os.environ.update(
+        SMI_DEMO_MODE="1", SMI_ENV="dev", SMI_EMBEDDED_WORKER="1", SMI_DATA_DIR=str(root), SMI_BACKUP_DIR=str(root / "backups"),
+        SMI_DATABASE_URL=f"sqlite:///{(root / 'demo.db').as_posix()}",  # as_posix: «sqlite:///C:/…» одинаково читается на Windows
+    )  # fmt: skip
+    get_settings.cache_clear()
+    return root, is_default
+
+
 def cmd_serve(a: argparse.Namespace) -> None:
     import uvicorn
 
-    uvicorn.run("smi_agent.api.app:app_factory", factory=True, host=a.host, port=a.port, log_level="info", proxy_headers=False)
+    if a.demo:
+        root, is_default = _prepare_demo(a)
+        shown = "localhost" if _is_loopback(a.host) else a.host
+        password = "smi-agent-showcase" if is_default else "значение SMI_DEMO_PASSWORD"
+        print(f"Демо-режим: вымышленные новости, песочница вместо платформ. Данные: {root}")
+        print(f"Интерфейс: http://{shown}:{a.port}   логин: demo   пароль: {password}   (остановка: Ctrl+C)", flush=True)
+    # use_colors=False на Windows: в старых консолях ANSI-коды цвета выводятся мусором
+    uvicorn.run("smi_agent.api.app:app_factory", factory=True, host=a.host, port=a.port, log_level="info", proxy_headers=False, use_colors=False if os.name == "nt" else None)
 
 
 def cmd_worker(_a: argparse.Namespace) -> None:
@@ -214,7 +267,19 @@ def cmd_audit(_a: argparse.Namespace) -> None:
     sys.exit(0 if r.ok else 1)
 
 
+def _tolerant_stdio() -> None:
+    """Не падать на print() с кириллицей, если вывод перенаправлен в файл/канал, а кодировка системы её не знает (cp1252 на Windows)."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(errors="backslashreplace")  # без потерь и без исключения; для stderr это и так значение по умолчанию
+            except (ValueError, OSError):
+                pass
+
+
 def main(argv: list[str] | None = None) -> None:
+    _tolerant_stdio()
     p = argparse.ArgumentParser(prog="smi-agent", description="AI-главный редактор: мониторинг, отбор тем, контент, публикация, аналитика")
     sub = p.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("init", help="создать БД, проект с источниками и администратора")
@@ -225,6 +290,8 @@ def main(argv: list[str] | None = None) -> None:
     s_ = sub.add_parser("serve", help="запустить веб-сервер и API")
     s_.add_argument("--host", default="127.0.0.1")
     s_.add_argument("--port", type=int, default=8000)
+    s_.add_argument("--demo", action="store_true", help="демо без настройки: вымышленные новости, песочница, данные во временной папке (при каждом запуске создаются заново)")
+    s_.add_argument("--demo-dir", default=None, help="каталог данных демо (по умолчанию: временная папка системы, подпапка smi-agent-demo)")
     s_.set_defaults(fn=cmd_serve)
     sub.add_parser("worker", help="запустить воркер фоновых заданий").set_defaults(fn=cmd_worker)
     k = sub.add_parser("keys", help="ключи шифрования")

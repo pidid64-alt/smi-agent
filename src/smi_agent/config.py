@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -11,10 +12,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="SMI_", env_file=".env", extra="ignore")
+    # utf-8-sig: на Windows Блокнот и PowerShell 5.1 (Set-Content -Encoding UTF8) дописывают BOM — он не должен портить первую переменную
+    model_config = SettingsConfigDict(env_prefix="SMI_", env_file=".env", env_file_encoding="utf-8-sig", extra="ignore")
 
     env: Literal["dev", "test", "production"] = "dev"
     demo_mode: bool = False
+    demo_password: SecretStr = SecretStr("")  # пароль демо-пользователей; пусто → общеизвестный «smi-agent-showcase» (только для локальной демонстрации)
     database_url: str = "sqlite:///./data/smi_agent.db"
     data_dir: Path = Path("./data")
     config_dir: Path = Path("./config")
@@ -82,6 +85,26 @@ class Settings(BaseSettings):
         return (self.media_public_base or self.public_url).rstrip("/")
 
 
+def check_env_file(path: str | os.PathLike[str] = ".env") -> None:
+    """Понятная ошибка вместо `UnicodeDecodeError`, если .env сохранён в UTF-16.
+
+    Так делает перенаправление `echo ... > .env` в Windows PowerShell 5.1. Читать такой файл как UTF-8 нельзя.
+    """
+    try:
+        with open(path, "rb") as f:
+            head = f.read(2)
+    except OSError:
+        return  # файла нет или он недоступен — это не ошибка: настройки можно задать переменными окружения
+    if head in (b"\xff\xfe", b"\xfe\xff"):
+        raise RuntimeError(
+            f"Файл {Path(path).resolve()} сохранён в кодировке UTF-16 (так делает «>» в Windows PowerShell 5.1). "
+            "Сохраните его как UTF-8: в Блокноте «Файл → Сохранить как → Кодировка: UTF-8»."
+        )
+
+
 @lru_cache
 def get_settings() -> Settings:
+    env_file = Settings.model_config.get("env_file")
+    if isinstance(env_file, str | os.PathLike):
+        check_env_file(env_file)
     return Settings()

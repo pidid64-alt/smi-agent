@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from datetime import timedelta
 from pathlib import Path
@@ -33,7 +34,8 @@ def test_backup_is_encrypted_verifiable_and_restorable(ctx, admin):
     res = ctx.backup.create()
     blob = Path(res["path"]).read_bytes()
     assert blob.startswith(b"SMIBK1") and b"PLAINTEXT-MARKER-XYZ" not in blob and b"SQLite format" not in blob
-    assert oct(Path(res["path"]).stat().st_mode)[-3:] == "600"
+    if os.name != "nt":  # права 0600 — понятие POSIX; на Windows доступ к файлу задаёт ACL каталога (см. docs/OPERATIONS.md)
+        assert oct(Path(res["path"]).stat().st_mode)[-3:] == "600"
     v = ctx.backup.verify(res["path"], record_id=res["id"])
     assert v["ok"] and v["integrity"] == "ok" and v["audit_chain_ok"] and v["audit_records"] >= 1
     target = Path(ctx.settings.data_dir) / "restored.db"

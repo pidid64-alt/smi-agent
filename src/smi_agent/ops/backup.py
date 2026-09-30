@@ -57,11 +57,11 @@ class BackupService:
             path = Path(st.data_dir) / "backup.key"
             path.parent.mkdir(parents=True, exist_ok=True)
             if not path.exists():
-                fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-                with os.fdopen(fd, "w") as f:
+                fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)  # 0600 действует на POSIX; на Windows права наследуются от каталога
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
                     f.write(base64.urlsafe_b64encode(pysecrets.token_bytes(32)).decode())
                 log.warning("Создан dev-ключ резервных копий %s (не для production)", path)
-            raw = path.read_text().strip()
+            raw = path.read_text(encoding="utf-8-sig").strip()
         key = base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4))
         if len(key) != 32:
             raise BackupError("SMI_BACKUP_KEY должен быть 32 байта в base64url")

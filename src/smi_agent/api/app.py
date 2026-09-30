@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
 import threading
 import uuid
 from contextlib import asynccontextmanager
@@ -25,9 +26,26 @@ log = logging.getLogger(__name__)
 STATIC = Path(__file__).resolve().parent.parent / "web" / "static"
 CSP = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 
+# Типы файлов интерфейса задаём сами. На Windows `mimetypes` читает реестр, и у части машин «.js» там — text/plain:
+# браузер не исполняет ES-модуль с таким типом, и интерфейс остаётся пустым.
+WEB_MIME_TYPES = {
+    ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".html": "text/html", ".json": "application/json",
+    ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".ico": "image/x-icon",
+    ".woff2": "font/woff2", ".ttf": "font/ttf",
+}  # fmt: skip
+
+
+def ensure_web_mime_types() -> None:
+    for ext, mime in WEB_MIME_TYPES.items():
+        mimetypes.add_type(mime, ext)
+
+
+ensure_web_mime_types()
+
 
 def create_app(ctx: Container | None = None, settings: Settings | None = None) -> FastAPI:
     settings = settings or (ctx.settings if ctx else get_settings())
+    ensure_web_mime_types()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

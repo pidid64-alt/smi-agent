@@ -33,10 +33,19 @@ from .corpus import DEMO_SOURCES, build_articles
 
 log = logging.getLogger(__name__)
 DEMO_PASSWORD_ENV = "SMI_DEMO_PASSWORD"
+DEFAULT_DEMO_PASSWORD = "smi-agent-showcase"  # общеизвестный: годится только для локальной демонстрации
 
 
-def demo_password() -> str:
-    return os.environ.get(DEMO_PASSWORD_ENV, "smi-agent-showcase")
+def demo_password(settings: Any = None) -> str:
+    """Пароль демо-пользователей: SMI_DEMO_PASSWORD (переменная окружения или .env), иначе общеизвестный по умолчанию."""
+    env = os.environ.get(DEMO_PASSWORD_ENV)
+    if env:
+        return env
+    if settings is not None:
+        configured = settings.demo_password.get_secret_value()
+        if configured:
+            return configured
+    return DEFAULT_DEMO_PASSWORD
 
 
 def seed_demo_if_empty(ctx: Any) -> bool:
@@ -65,7 +74,7 @@ def seed_demo(ctx: Any) -> dict[str, Any]:
         for key, name, country, tier, rel, group, official, wire in DEMO_SOURCES:
             s.add(Source(project_id=pid, key=key, name=name, kind="manual", url="", country=country, languages=["ru"] if country == "KZ" else ["ru", "en"], tier=tier, reliability=rel, independence_group=group, aliases=[name.split(" (")[0]], is_official=official, is_wire=wire, enabled=True, verified_url=False, config={"demo": True}, state={}, notes="Вымышленный источник для демонстрации.", timezone="UTC"))
         s.flush()
-        pw = demo_password()
+        pw = demo_password(ctx.settings)
         users = {}
         for name, role, sup in (("demo", "admin", True), ("editor", "user", False), ("auditor", "auditor", False)):
             users[name] = ctx.auth.create_user(s, None, username=name, password=pw, display_name={"demo": "Демо-администратор", "editor": "Редактор", "auditor": "Аудитор"}[name], project_id=pid, role=role, superadmin=sup).id

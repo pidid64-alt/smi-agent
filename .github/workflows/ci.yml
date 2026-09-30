@@ -2,15 +2,41 @@ name: CI
 on:
   push:
   pull_request:
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: test (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, python: "3.11" }
+          - { os: ubuntu-latest, python: "3.14" }
+          - { os: windows-latest, python: "3.11" }
+          - { os: windows-latest, python: "3.14" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python }}
           cache: pip
       - run: pip install -e ".[dev]"
-      - run: ruff check src tests
+      - run: ruff check src tests scripts
       - run: pytest -q
+      # Демо так, как его запускает пользователь (`smi-agent serve --demo`): сервер, вход, интерфейс, выбор темы, карточка.
+      # Кодировка консоли и реестр MIME — системные, без PYTHONUTF8: проверяем именно обычное окружение Windows.
+      - name: Demo smoke test (smi-agent serve --demo)
+        run: python scripts/smoke_demo.py --port 8123
+
+  # Тот же сценарий, но через двойной клик: scripts/run-demo.cmd сам создаёт .venv, ставит проект и запускает демо.
+  windows-launcher:
+    name: Windows launcher (scripts/run-demo.cmd)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: run-demo.cmd, проверка по HTTP
+        run: python scripts/smoke_demo.py --port 8124 --timeout 600 -- cmd /c scripts\run-demo.cmd --port 8124
