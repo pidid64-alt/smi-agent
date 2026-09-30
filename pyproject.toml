@@ -40,6 +40,7 @@ smi_agent = ["web/static/**/*", "assets/**/*", "defaults/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-q -ra"
 timeout = 120
 filterwarnings = ["ignore::DeprecationWarning"]

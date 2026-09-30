@@ -31,19 +31,31 @@ class Container:
         self.audit = AuditService(self.clock)
         self.secrets = SecretStore(self.settings, self.audit, self.clock)
         self.http = http or SafeHttp(self.settings)
-        self._llm = llm
+        self._llm_override = llm
         self._wire()
 
     def _wire(self) -> None:
         from .events.cluster import EventService
         from .ingestion.service import IngestService
 
+        from .checks.service import CheckService
+        from .content.service import ContentService
         from .funnel.service import FunnelService
+        from .interaction.service import InteractionService
         from .learning.service import LearningService
         from .profile.service import ProfileService
+        from .publishing.accounts import AccountService
+        from .publishing.autopilot import AutopilotService
+        from .publishing.killswitch import KillSwitchService
+        from .publishing.scheduling import SchedulingService
+        from .publishing.service import PublishingService
         from .scoring.trend import TrendScorer
         from .verification.service import VerificationService
 
+        from .llm.client import build_client
+        from .llm.service import LlmService
+
+        self.llm = LlmService(self, self._llm_override if self._llm_override is not None else build_client(self.settings))
         self.ingest = IngestService(self)
         self.events = EventService(self)
         self.scoring = TrendScorer(self)
@@ -51,7 +63,16 @@ class Container:
         self.learning = LearningService(self)
         self.profile = ProfileService(self)
         self.funnel = FunnelService(self)
+        self.checks = CheckService(self)
+        self.content = ContentService(self)
+        self.interaction = InteractionService(self)
+        self.accounts = AccountService(self)
+        self.scheduling = SchedulingService(self)
+        self.killswitch = KillSwitchService(self)
+        self.publishing = PublishingService(self)
+        self.autopilot = AutopilotService(self)
 
     def close(self) -> None:
         self.http.close()
+        self.accounts.http.close()
         self.db.dispose()

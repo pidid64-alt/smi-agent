@@ -108,6 +108,17 @@ class EgressGuard:
                 raise SSRFBlocked(f"Адрес {bad[0]} не является публичным")
         return ips
 
+    def precheck(self, url: str) -> None:
+        """Проверка без DNS (для сохранения настроек): схема/порт/учётные данные, IP-литералы и запрещённые имена."""
+        _, host, _, _ = self.parse(url)
+        try:
+            ipaddress.ip_address(host)
+            if not self.policy.allow_private and not ip_is_public(host):
+                raise SSRFBlocked(f"Адрес {host} не является публичным")
+        except ValueError:
+            if not self.policy.allow_private and (host in _BLOCKED_NAMES or host.endswith(_BLOCKED_SUFFIXES)):
+                raise SSRFBlocked(f"Хост {host} запрещён") from None
+
     def check_url(self, url: str) -> list[str]:
         _, host, port, _ = self.parse(url)
         return self.resolve_public(host, port)

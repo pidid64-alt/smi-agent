@@ -80,7 +80,7 @@ class VerificationService:
             checks.append(_check("independent", "Независимые подтверждения", "pass", "2 независимых источника"))
         else:
             checks.append(_check("independent", "Независимые подтверждения", "warn", "Только один независимый источник" + (f"; остальные ссылаются на {', '.join(cited_only)}" if cited_only else "")))
-        if ev.n_articles > ev.n_independent + 1:
+        if ev.n_articles > ev.n_independent:
             warnings.append(f"Из {ev.n_articles} публикаций независимых лишь {ev.n_independent}: остальные — перепечатки и обновления")
 
         # 3. цифры: противоречия в заголовках независимых материалов и числа, встречающиеся лишь у одного источника

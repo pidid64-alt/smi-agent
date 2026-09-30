@@ -82,7 +82,7 @@ sources:
     category_hint: law
     verified_url: false
   - key: kursiv
-    name: Kursiv.media (Курсив)
+    name: Kursiv.media
     kind: rss
     url: https://kz.kursiv.media/feed/
     site_url: https://kz.kursiv.media
@@ -236,7 +236,7 @@ sources:
     verified_url: false
     notes: Только заголовки/анонсы (платный доступ).
   - key: reuters
-    name: Reuters (news sitemap)
+    name: Reuters
     kind: sitemap
     url: https://www.reuters.com/arc/outboundfeeds/news-sitemap-index/?outputType=xml
     site_url: https://www.reuters.com

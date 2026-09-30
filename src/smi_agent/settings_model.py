@@ -58,10 +58,12 @@ class ContentSettings(BaseModel):
     brand_name: str = "Мой медиа-проект"
     ai_disclosure: bool = True  # маркировка ИИ-участия (закон РК «Об ИИ», с 2026 г.)
     ai_disclosure_text: dict[str, str] = {
-        "ru": "Материал подготовлен с использованием ИИ и проверен редактором.",
-        "kk": "Материал жасанды интеллектті пайдаланып дайындалды және редактор тексерді.",
-        "en": "This material was prepared with AI assistance and reviewed by an editor.",
+        "ru": "Материал подготовлен с использованием ИИ.",
+        "kk": "Материал жасанды интеллектті пайдаланып дайындалды.",
+        "en": "This material was prepared with the help of AI.",
     }
+    ai_disclosure_reviewed_suffix: dict[str, str] = {"ru": " Проверено редактором.", "kk": " Редактор тексерді.", "en": " Reviewed by an editor."}
+    ai_image_label: dict[str, str] = {"ru": "Создано ИИ", "kk": "ЖИ жасаған", "en": "AI-generated"}
     copy_max_ratio: float = 0.12  # допустимая доля дословных совпадений с источниками
     copy_max_run_words: int = 10
 

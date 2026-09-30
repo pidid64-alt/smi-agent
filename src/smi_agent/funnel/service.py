@@ -105,6 +105,8 @@ class FunnelService:
                 why = "реклама/партнёрский материал"
             elif e.id in recently_rejected and e.n_independent < 2 * recently_rejected[e.id]:
                 why = "ранее отклонено пользователем"
+            elif (blocked := ctx.profile.is_blocked(s, project_id, e)) is not None:
+                why = blocked
             if why:
                 c.reasons.append(why)
                 dropped_reasons[why.split(" ")[0]] = dropped_reasons.get(why.split(" ")[0], 0) + 1

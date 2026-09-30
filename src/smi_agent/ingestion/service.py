@@ -109,7 +109,7 @@ class IngestService:
             if not url:
                 raise ValidationFailed("Укажите адрес ленты")
             try:
-                self.ctx.http.guard.parse(url)  # схема/порт/хост; DNS проверяется при опросе
+                self.ctx.http.guard.precheck(url)  # схема/порт/IP-литералы/запрещённые имена; DNS проверяется при каждом опросе
             except SSRFBlocked as e:
                 raise ValidationFailed(f"Адрес отклонён политикой безопасности: {e.message}") from e
         if "config" in d and not isinstance(d["config"], dict):
