@@ -52,6 +52,7 @@ TRANSITIONS: dict[PubState, set[PubState]] = {
     S.CANCELLED: set(),
 }
 MAX_ATTEMPTS = 5
+AUTONOMOUS_APPROVER = "service:autopilot"  # публикация автономна, только если её подтвердил автопилот; решение человека — всегда ручное
 STUCK_AFTER = timedelta(minutes=5)
 
 
@@ -169,7 +170,7 @@ class PublishingService:
             spec = dict(p.schedule or {})
             project_id = p.project_id
             self.transition(s, p, S.CANCELLED, actor, "Текст изменён — создана новая версия публикации")
-            self.create_for_content(s, project_id, p.content_pk, actor, platforms=[p.platform], schedule=spec, origin=p.origin)
+            self.create_for_content(s, project_id, p.content_pk, actor, platforms=[p.platform], schedule=spec, origin="user" if actor.type == "user" else p.origin)
 
     # ====================================================================== чтение
     def get(self, s: Session, project_id: int, pub_id: int) -> Publication:
@@ -295,7 +296,7 @@ class PublishingService:
         if acc is None or acc.status != AccountStatus.CONNECTED.value:
             return {"state": S.NEEDS_REVIEW, "note": "Аккаунт платформы не подключён или отозван"}
         content = s.get(Content, pub.content_pk)
-        autonomous = pub.origin == "autopilot" or pub.approved_by == "service:autopilot"
+        autonomous = pub.approved_by == AUTONOMOUS_APPROVER
         if autonomous:
             ks = ctx.killswitch.blocking(s, pub.project_id, platform=pub.platform, account_id=acc.id, category=content.category)
             if ks is not None:
@@ -316,7 +317,7 @@ class PublishingService:
         acc = s.get(PlatformAccount, pub.account_id)
         v = s.get(PlatformVersion, pub.platform_version_id)
         cfg = load_project_settings(s.get(Project, pub.project_id).settings)
-        human = not (pub.origin == "autopilot" or pub.approved_by == "service:autopilot")
+        human = not (pub.approved_by == AUTONOMOUS_APPROVER)
         rendered = render_final(pub.platform, v, cfg, reviewed=human)
         token = ctx.accounts.token_for(s, Actor.ai("publisher", pub.project_id), acc, purpose=f"publish:{pub.id}")
         return {
@@ -387,7 +388,7 @@ class PublishingService:
         acc = s.get(PlatformAccount, pub.account_id)
         v = s.get(PlatformVersion, pub.platform_version_id)
         cfg = load_project_settings(s.get(Project, pub.project_id).settings)
-        human = not (pub.origin == "autopilot" or pub.approved_by == "service:autopilot")
+        human = not (pub.approved_by == AUTONOMOUS_APPROVER)
         rendered = render_final(pub.platform, v, cfg, reviewed=human)
         token = self.ctx.accounts.token_for(s, Actor.ai("publisher", pub.project_id), acc, purpose=f"reconcile:{pub.id}")
         pctx = PublishContext(

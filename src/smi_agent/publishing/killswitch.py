@@ -65,7 +65,7 @@ class KillSwitchService:
 
     def _hold_autonomous(self, s: Session, ks: KillSwitch, actor: Actor) -> int:
         """Запланированные публикации автопилота в зоне действия переводятся в «Ожидает подтверждения»: после снятия они не выйдут «задним числом»."""
-        q = select(Publication).join(Content, Content.id == Publication.content_pk).where(Publication.state == PubState.SCHEDULED.value, Publication.origin == "autopilot")
+        q = select(Publication).join(Content, Content.id == Publication.content_pk).where(Publication.state == PubState.SCHEDULED.value, Publication.approved_by == "service:autopilot")
         if ks.scope_type != KillScope.SYSTEM.value:
             q = q.where(Publication.project_id == ks.project_id)
         if ks.scope_type == KillScope.PLATFORM.value:

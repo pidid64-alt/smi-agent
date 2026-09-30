@@ -243,3 +243,31 @@ def ready_manual(llm_ctx, corpus, pipeline, admin):
     cpk = ctx.content.create(corpus, pid, {}, admin)
     _accounts(ctx, corpus, admin, platforms=("telegram",), mode="manual")
     return ctx, corpus, cpk
+
+
+def test_human_approval_makes_publication_manual_even_if_autopilot_created_it(auto, admin):
+    """Решение человека — всегда ручное: не подпадает под выключатель автопилота и получает пометку «Проверено редактором»."""
+    ctx, project = auto
+    assert ctx.autopilot.tick(project)["status"] == "scheduled"
+    with ctx.db.session() as s:
+        ctx.killswitch.engage(s, admin, project_id=project, scope_type="project", reason="стоп")
+    with ctx.db.read() as s:
+        held = [p for p in s.scalars(select(Publication)) if p.origin == "autopilot"]
+        assert held and {p.state for p in held} == {"awaiting_approval"} and all(p.approved_by is None for p in held)
+        tg_id = next(p.id for p in held if p.platform == "telegram")
+    with ctx.db.session() as s:
+        ctx.publishing.approve(s, project, tg_id, admin, schedule={"mode": "now"})  # человек осознанно подтверждает, выключатель автопилота всё ещё включён
+    res = {r["publication_id"]: r for r in ctx.publishing.run_due()}
+    assert res[tg_id]["state"] == "published"
+    with ctx.db.read() as s:
+        pub = s.get(Publication, tg_id)
+        assert pub.origin == "autopilot" and pub.approved_by == "user:1"
+        assert s.scalars(select(Publication).where(Publication.platform == "facebook", Publication.origin == "autopilot")).first().state == "awaiting_approval"  # остальное остаётся на удержании
+    from smi_agent.content.render import render_final
+    from smi_agent.db.models import PlatformVersion
+    from smi_agent.settings_model import load_project_settings
+
+    with ctx.db.read() as s:
+        v = s.get(PlatformVersion, pub.platform_version_id)
+        cfg = load_project_settings(s.get(Project, project).settings)
+        assert render_final("telegram", v, cfg, reviewed=True).disclosure.endswith("Проверено редактором.")

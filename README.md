@@ -72,7 +72,7 @@ smi-agent worker                                # фоновые задания 
 
 ## Статус: что реализовано и что проверено (честно)
 
-Проверено автоматически: **261 тест** (`pytest`, ~2 минуты, без сети) + ручной прогон интерфейса в headless-Chromium (сквозной сценарий демо без ошибок в консоли).
+Проверено автоматически: **262 теста** (`pytest`, ~2 минуты, без сети) + ручной прогон интерфейса в headless-Chromium (сквозной сценарий демо без ошибок в консоли).
 
 | Область | Статус |
 |---|---|
@@ -123,7 +123,7 @@ smi-agent worker                                # фоновые задания 
 ```bash
 pip install -e ".[dev]"
 ruff check src tests
-pytest -q                     # 261 тест
+pytest -q                     # 262 теста
 ```
 
 Структура: `src/smi_agent/{ingestion,events,scoring,funnel,verification,proposals,interaction,learning,profile,content,visual,checks,publishing,analytics,ops,security,audit,llm,api,web,demo}`; тестовые данные — вымышленные (`tests/fixtures/corpus.py`, `src/smi_agent/demo/corpus.py`).
