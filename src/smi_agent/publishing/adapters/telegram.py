@@ -77,6 +77,12 @@ class TelegramAdapter:
             return AccountCheck(False, detail="Бот должен быть администратором канала с правом публикации сообщений", reauth=True)
         return AccountCheck(True, display_name=chat.get("title", ""), external_id=str(chat.get("id", external_id)), handle=f"@{chat['username']}" if chat.get("username") else "", scopes=["post_messages"])
 
+    def fetch_audience(self, external_id: str, token: str) -> int | None:
+        try:
+            return int(self._call(token, "getChatMemberCount", data={"chat_id": external_id.split("/")[0]}))
+        except PlatformError:
+            return None
+
     def fetch_metrics(self, external_id: str, token: str, *, fmt: str = "post") -> dict[str, Any]:
         """Bot API не отдаёт просмотры/пересылки канала. Возвращаем число подписчиков; остальное — ручной ввод/импорт."""
         chat_id = external_id.split("/")[0]

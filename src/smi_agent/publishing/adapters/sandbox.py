@@ -46,5 +46,8 @@ class SandboxAdapter:
     def check_account(self, external_id: str, token: str) -> AccountCheck:
         return AccountCheck(True, display_name=f"Песочница {self.platform}", external_id=external_id or "sandbox", handle="@sandbox", scopes=["sandbox"])
 
+    def fetch_audience(self, external_id: str, token: str) -> int | None:
+        return None
+
     def fetch_metrics(self, external_id: str, token: str, *, fmt: str = "post") -> dict[str, Any]:
         return {"unavailable": ["views", "reach", "likes", "comments", "shares", "saves"], "note": "Песочница не возвращает реальные метрики"}

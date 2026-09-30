@@ -150,6 +150,12 @@ class InstagramAdapter:
         except PlatformError as e:
             return ReconcileResult("unknown", detail=e.message)
 
+    def fetch_audience(self, external_id: str, token: str) -> int | None:
+        try:
+            return int(self.g.call("GET", external_id, token, params={"fields": "followers_count"}).get("followers_count"))
+        except (PlatformError, TypeError, ValueError):
+            return None
+
     def check_account(self, external_id: str, token: str) -> AccountCheck:
         try:
             me = self.g.call("GET", external_id, token, params={"fields": "id,username,name"})
@@ -209,6 +215,13 @@ class FacebookAdapter:
         if now and ctx.claimed_at and (now - ctx.claimed_at).total_seconds() >= 600:
             return ReconcileResult("not_found", detail="В ленте страницы нет публикации с таким текстом спустя 10 минут")
         return ReconcileResult("unknown", detail="Публикация пока не найдена; повторите сверку позже")
+
+    def fetch_audience(self, external_id: str, token: str) -> int | None:
+        try:
+            d = self.g.call("GET", external_id, token, params={"fields": "followers_count,fan_count"})
+            return int(d.get("followers_count") or d.get("fan_count"))
+        except (PlatformError, TypeError, ValueError):
+            return None
 
     def check_account(self, external_id: str, token: str) -> AccountCheck:
         try:

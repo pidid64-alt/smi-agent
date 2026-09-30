@@ -38,6 +38,8 @@ class Container:
         from .events.cluster import EventService
         from .ingestion.service import IngestService
 
+        from .analytics.metrics import MetricsService
+        from .analytics.service import AnalyticsService
         from .checks.service import CheckService
         from .content.service import ContentService
         from .funnel.service import FunnelService
@@ -52,6 +54,8 @@ class Container:
         from .scoring.trend import TrendScorer
         from .verification.service import VerificationService
 
+        from .ops.backup import BackupService
+        from .ops.health import HealthService
         from .llm.client import build_client
         from .llm.service import LlmService
 
@@ -71,6 +75,10 @@ class Container:
         self.killswitch = KillSwitchService(self)
         self.publishing = PublishingService(self)
         self.autopilot = AutopilotService(self)
+        self.metrics = MetricsService(self)
+        self.analytics = AnalyticsService(self)
+        self.backup = BackupService(self)
+        self.health = HealthService(self)
 
     def close(self) -> None:
         self.http.close()

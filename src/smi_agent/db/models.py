@@ -743,6 +743,7 @@ class ForecastRecord(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     project_id: Mapped[int] = _fk("projects")
     content_pk: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    publication_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)  # прогноз оценивается по каждой публикации (платформе)
     proposal_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     category: Mapped[str] = mapped_column(String(40), default="")
     prediction: Mapped[dict[str, Any]] = _js()

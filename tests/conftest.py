@@ -181,3 +181,25 @@ def llm_ctx(settings, clock, fake_llm):
     c.db.create_all()
     yield c
     c.close()
+
+
+@pytest.fixture
+def published(llm_ctx, corpus, pipeline, admin):
+    """Материал, опубликованный в песочницах трёх платформ. Возвращает (ctx, project_id, content_pk, [publication ids])."""
+    from smi_agent.db.models import Proposal, Publication
+
+    ctx = llm_ctx
+    pipeline(corpus)
+    with ctx.db.read() as s:
+        pid = s.scalars(select(Proposal).where(Proposal.slot == 1)).first().id
+    content_pk = ctx.content.create(corpus, pid, {}, admin)
+    with ctx.db.session() as s:
+        for p in ("telegram", "instagram", "facebook"):
+            ctx.accounts.connect(s, admin, corpus, platform=p, sandbox=True, mode="manual", display_name=f"{p} demo")
+    with ctx.db.session() as s:
+        pubs = ctx.publishing.create_for_content(s, corpus, content_pk, admin)
+        ids = [p.id for p in pubs]
+        for p in pubs:
+            ctx.publishing.approve(s, corpus, p.id, admin)
+    assert all(r["state"] == "published" for r in ctx.publishing.run_due())
+    return ctx, corpus, content_pk, ids
