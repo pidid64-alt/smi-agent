@@ -39,6 +39,7 @@ class Container:
         from .ingestion.service import IngestService
 
         from .analytics.metrics import MetricsService
+        from .security.auth import AuthService
         from .analytics.service import AnalyticsService
         from .checks.service import CheckService
         from .content.service import ContentService
@@ -78,6 +79,7 @@ class Container:
         self.metrics = MetricsService(self)
         self.analytics = AnalyticsService(self)
         self.backup = BackupService(self)
+        self.auth = AuthService(self)
         self.health = HealthService(self)
 
     def close(self) -> None:
