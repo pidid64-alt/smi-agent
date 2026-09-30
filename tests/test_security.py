@@ -4,7 +4,7 @@ import socket
 import httpx
 import pytest
 
-from smi_agent.core.errors import Conflict, Forbidden, SSRFBlocked
+from smi_agent.core.errors import Forbidden, SSRFBlocked
 from smi_agent.monitoring.http import SafeHttp
 from smi_agent.security.passwords import check_password_policy, hash_password, needs_rehash, verify_password
 from smi_agent.security.rbac import Actor, Perm, authorize, can

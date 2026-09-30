@@ -19,8 +19,8 @@ from ..db.models import Article, Project, Source
 from ..knowledge import load_yaml_default
 from ..security.rbac import Actor
 from ..settings_model import load_project_settings
-from .feeds import RawItem, extract_main_text, parse_items
 from .features import build_alias_index, compute_features
+from .feeds import RawItem, extract_main_text, parse_items
 from .normalize import canonical_url, clean_title, first_paragraphs, html_to_text, parse_datetime, url_hash
 
 log = logging.getLogger(__name__)

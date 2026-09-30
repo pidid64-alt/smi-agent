@@ -1,12 +1,11 @@
-from datetime import timedelta
 
 import httpx
 import pytest
 from sqlalchemy import select
 
 from smi_agent.core.errors import Conflict, ValidationFailed
-from smi_agent.db.models import Article, Project, Source
-from smi_agent.ingestion.feeds import parse_items, parse_sitemap
+from smi_agent.db.models import Article, Source
+from smi_agent.ingestion.feeds import parse_sitemap
 from smi_agent.ingestion.normalize import canonical_url, clean_title, html_to_text, parse_datetime, url_hash
 from smi_agent.monitoring.http import SafeHttp
 from smi_agent.security.rbac import Actor

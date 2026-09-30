@@ -1,4 +1,3 @@
-import base64
 from datetime import timedelta
 
 import pytest
@@ -6,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from smi_agent.api.app import create_app
-from smi_agent.db.models import AuditLog, Project, Proposal
+from smi_agent.db.models import AuditLog, Project
 from smi_agent.security.totp import totp_now
 
 PW = "correct horse battery"
@@ -327,3 +326,18 @@ def test_select_endpoint_with_structured_overrides(api):
     assert [v["platform"] for v in d["versions"]] == ["telegram"] and "Казахстан" in d["angle"]
     assert api.post(P(api, "/proposals/1/select"), json={}, headers=H(api)).status_code == 422  # повторный выбор отклонён
     assert api.post(P(api, "/proposals/2/select"), json={"language": "de"}, headers=H(api)).status_code == 422  # язык вне ru/kk/en
+
+
+def test_client_ip_header_is_ignored_unless_proxy_is_trusted(api):
+    """Без SMI_TRUST_PROXY заголовок X-Forwarded-For подделывается клиентом и не должен влиять на блокировку/лимиты."""
+    for i in range(5):
+        api.post("/api/auth/login", json={"username": "editor", "password": "bad"}, headers={"X-Forwarded-For": f"10.0.0.{i}"})
+    with api.ctx.db.read() as s:
+        from smi_agent.db.models import LoginAttempt
+
+        keys = {a.key for a in s.scalars(select(LoginAttempt))}
+        assert keys == {"user:editor", "ip:testclient"}  # IP — из соединения, а не из заголовка
+    api.app.state.trust_proxy = True
+    api.post("/api/auth/login", json={"username": "editor", "password": "bad"}, headers={"X-Forwarded-For": "203.0.113.9, 10.0.0.1"})
+    with api.ctx.db.read() as s:
+        assert "ip:203.0.113.9" in {a.key for a in s.scalars(select(LoginAttempt))}  # за доверенным прокси берём первый адрес

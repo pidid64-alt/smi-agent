@@ -13,9 +13,15 @@ from sqlalchemy.orm import Session
 
 from ..core.enums import AccountStatus, PubState
 from ..core.errors import NotFound, ValidationFailed
-from ..db.models import AudienceSnapshot, Content, ForecastRecord, MetricSnapshot, PlatformAccount, Publication
+from ..db.models import (
+    AudienceSnapshot,
+    Content,
+    ForecastRecord,
+    MetricSnapshot,
+    PlatformAccount,
+    Publication,
+)
 from ..security.rbac import Actor
-from ..settings_model import load_project_settings
 
 log = logging.getLogger(__name__)
 MILESTONES_H = [1, 3, 6, 12, 24, 48, 168]

@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..core.errors import ValidationFailed
-from ..db.models import EditorialCorrection, Event, PerformanceStat, ProfileFeature, ProfileSettings, Proposal, UserAction
+from ..db.models import (
+    EditorialCorrection,
+    Event,
+    PerformanceStat,
+    ProfileFeature,
+    ProfileSettings,
+    Proposal,
+    UserAction,
+)
 from ..learning.service import decay_factor, event_features
 from ..security.rbac import Actor
 

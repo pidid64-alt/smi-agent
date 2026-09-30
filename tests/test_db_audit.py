@@ -36,7 +36,10 @@ def test_write_sessions_are_serialized(ctx):
             order.append("w2-write")
 
     t1, t2 = threading.Thread(target=w1), threading.Thread(target=w2)
-    t1.start(); t2.start(); t1.join(); t2.join()
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
     assert order.index("w1-commit") < order.index("w2-write")
 
 

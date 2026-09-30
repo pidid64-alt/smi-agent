@@ -1,13 +1,19 @@
-import math
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
 
 from smi_agent.analytics.metrics import primary_value
 from smi_agent.core.errors import ValidationFailed
-from smi_agent.db.models import Content, ForecastRecord, LearningEvent, MetricSnapshot, PerformanceStat, PlatformVersion, Publication
-from smi_agent.security.rbac import Actor
+from smi_agent.db.models import (
+    Content,
+    ForecastRecord,
+    LearningEvent,
+    MetricSnapshot,
+    PerformanceStat,
+    PlatformVersion,
+    Publication,
+)
 
 
 def _pub(ctx, ids, platform):

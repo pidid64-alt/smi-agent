@@ -58,7 +58,7 @@ def create_app(ctx: Container | None = None, settings: Settings | None = None) -
         docs_url="/docs" if settings.docs_enabled else None, redoc_url=None, openapi_url="/openapi.json" if settings.docs_enabled else None,
     )  # fmt: skip
     app.state.limiter = RateLimiter()
-    app.state.trust_proxy = False
+    app.state.trust_proxy = settings.trust_proxy
     if ctx is not None:
         app.state.ctx = ctx
 

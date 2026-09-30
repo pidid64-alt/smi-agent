@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from smi_agent.db.models import Article, Event
+from smi_agent.db.models import Event
 from tests.conftest import add_article
 
 

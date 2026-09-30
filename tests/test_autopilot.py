@@ -3,8 +3,19 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
-from smi_agent.core.errors import Conflict, Forbidden, ValidationFailed
-from smi_agent.db.models import AuditLog, Event, KillSwitch, LearningEvent, Notification, PlatformAccount, Project, Proposal, Publication, UserAction
+from smi_agent.core.errors import Forbidden, ValidationFailed
+from smi_agent.db.models import (
+    AuditLog,
+    Event,
+    KillSwitch,
+    LearningEvent,
+    Notification,
+    PlatformAccount,
+    Project,
+    Proposal,
+    Publication,
+    UserAction,
+)
 from smi_agent.security.rbac import Actor
 from tests.conftest import add_article
 
@@ -206,7 +217,7 @@ def test_kill_switch_is_checked_again_at_claim_time(auto, admin):
     with ctx.db.session() as s:  # выключатель включили «в обход» перевода в удержание (гонка): отправка всё равно не произойдёт
         s.add(KillSwitch(project_id=project, scope_type="platform", scope_value="telegram", engaged_by="user:1", reason="гонка", engaged_at=ctx.clock.now()))
     ctx.clock.advance(days=1)
-    res = {r["publication_id"]: r for r in ctx.publishing.run_due()}
+    ctx.publishing.run_due()
     with ctx.db.read() as s:
         tg = s.scalars(select(Publication).where(Publication.platform == "telegram")).first()
         fb = s.scalars(select(Publication).where(Publication.platform == "facebook")).first()

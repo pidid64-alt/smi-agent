@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import select
 
 from smi_agent.core.enums import ActionKind
-from smi_agent.db.models import Content, FunnelItem, LearningEvent, Proposal, UserAction
+from smi_agent.db.models import Content, LearningEvent, Proposal, UserAction
 from smi_agent.interaction.commands import parse_commands
 
 K = ActionKind

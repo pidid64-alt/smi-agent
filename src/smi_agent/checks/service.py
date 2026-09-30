@@ -8,11 +8,11 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..content.factbase import FactBase, Fact, Quote
+from ..content.factbase import Fact, FactBase, Quote
 from ..content.generator import validate_generated
 from ..content.originality import copy_report
 from ..content.platforms import LIMITS
-from ..content.render import Rendered, render_final, sanitize_tg_html
+from ..content.render import render_final, sanitize_tg_html
 from ..core.text import detect_language
 from ..db.models import Article, CheckReport, Content, Event, MediaAsset, PlatformVersion, Project
 from ..ingestion.features import extract_numbers

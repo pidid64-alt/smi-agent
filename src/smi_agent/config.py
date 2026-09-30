@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     require_mfa_for_admin: bool | None = None  # None → True в production
     enable_docs: bool | None = None  # None → только вне production
     embedded_worker: bool = False  # запускать фоновые задачи внутри процесса API (удобно для демо)
+    trust_proxy: bool = False  # брать IP клиента из X-Forwarded-For: включать ТОЛЬКО за доверенным прокси, который перезаписывает заголовок
     # Исходящие запросы (SSRF / контроль внешних обращений)
     user_agent: str = "SmiAgentBot/0.1 (+https://github.com/pidid64-alt/smi-agent)"
     fetch_timeout_s: float = 15.0

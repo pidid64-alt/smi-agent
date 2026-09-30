@@ -1,10 +1,9 @@
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 
 from smi_agent.core.errors import ValidationFailed
-from smi_agent.db.models import Content, Event, ProfileFeature
+from smi_agent.db.models import Content, Event
 from smi_agent.learning.service import HALF_LIFE_DAYS, decay_factor
 from smi_agent.profile.service import posterior
 

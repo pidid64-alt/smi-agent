@@ -1,9 +1,7 @@
-import pytest
 from sqlalchemy import select
 
 from smi_agent.db.models import Event, FunnelItem, FunnelRun, Proposal
 from smi_agent.funnel.service import Cand, select_balanced
-from smi_agent.security.rbac import Actor
 from tests.conftest import add_article
 
 
@@ -19,8 +17,7 @@ def test_funnel_narrows_and_never_pads(ctx, corpus, pipeline):
     assert c["pool"] == 6 and c["pool"] >= c["s50"] >= c["s15"] >= c["s10"] >= c["s5"]
     assert c["s5"] == len(props) and 1 <= len(props) <= 5
     assert run.status == "done" and run.geo_ratio["target_kz"] == 0.6 and "note" in run.notes
-    with ctx.db.read() as s:
-        assert "Scientists find ancient tomb" not in " ".join(p.card["title"] for p in props.values())  # слабая тема не попала
+    assert "Scientists find ancient tomb" not in " ".join(p.card["title"] for p in props.values())  # слабая тема не попала
 
 
 def test_quota_is_never_padded_with_weak_items(ctx, corpus, pipeline, admin):

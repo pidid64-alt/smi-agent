@@ -1,4 +1,3 @@
-import json
 import sqlite3
 from datetime import timedelta
 from pathlib import Path
@@ -9,10 +8,17 @@ from sqlalchemy import select
 
 from smi_agent.config import Settings
 from smi_agent.container import Container
-from smi_agent.db.models import BackupRecord, HealthRecord, JobLease, Notification, PlatformAccount, Project, Publication, SecretRecord, Source
+from smi_agent.db.models import (
+    HealthRecord,
+    JobLease,
+    Notification,
+    PlatformAccount,
+    Project,
+    Publication,
+    Source,
+)
 from smi_agent.ops.backup import BackupError
 from smi_agent.ops.worker import Job, Worker
-from smi_agent.security.rbac import Actor
 
 
 def _seed(ctx, admin):

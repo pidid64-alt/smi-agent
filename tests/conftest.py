@@ -19,7 +19,7 @@ from smi_agent.db.models import Article, Project, Source  # noqa: E402
 from smi_agent.ingestion.normalize import canonical_url, url_hash  # noqa: E402
 from smi_agent.knowledge import get_knowledge  # noqa: E402
 from smi_agent.security.rbac import Actor  # noqa: E402
-from tests.fixtures.corpus import ARTICLES, SOURCE_DEFS, T0, published_at, source_row  # noqa: E402
+from tests.fixtures.corpus import ARTICLES, T0, published_at, source_row  # noqa: E402
 
 
 @pytest.fixture(scope="session")
@@ -74,7 +74,7 @@ def project(ctx: Container, admin: Actor) -> int:
 
 def _load_corpus(ctx: Container, project_id: int, ids: list[str] | None = None) -> None:
     """Кладёт синтетические статьи в БД с признаками, как это делает сбор (без HTTP)."""
-    from smi_agent.core.text import simhash, sha256_hex, tokenize
+    from smi_agent.core.text import sha256_hex, simhash, tokenize
     from smi_agent.ingestion.features import build_alias_index, compute_features
 
     with ctx.db.session() as s:
@@ -186,7 +186,7 @@ def llm_ctx(settings, clock, fake_llm):
 @pytest.fixture
 def published(llm_ctx, corpus, pipeline, admin):
     """Материал, опубликованный в песочницах трёх платформ. Возвращает (ctx, project_id, content_pk, [publication ids])."""
-    from smi_agent.db.models import Proposal, Publication
+    from smi_agent.db.models import Proposal
 
     ctx = llm_ctx
     pipeline(corpus)

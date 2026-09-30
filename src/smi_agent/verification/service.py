@@ -90,7 +90,7 @@ class VerificationService:
             for n in extract_numbers(a.title, a.lang):
                 if n["u"]:
                     by_unit.setdefault(n["u"], []).append((float(n["v"]), a.source.name, n["raw"]))
-        for unit, vals in by_unit.items():
+        for vals in by_unit.values():
             for i in range(len(vals)):
                 for j in range(i + 1, len(vals)):
                     (v1, s1, r1), (v2, s2, r2) = vals[i], vals[j]

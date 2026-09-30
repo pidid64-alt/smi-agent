@@ -14,13 +14,21 @@ from sqlalchemy.orm import Session
 from ..core.enums import Platform
 from ..core.errors import Conflict, NotFound, ValidationFailed
 from ..core.ids import next_content_id
-from ..core.text import sha256_hex
-from ..db.models import CheckReport, Content, Event, MediaAsset, PlatformVersion, Project, Proposal, Verification
+from ..core.text import clip, sha256_hex
+from ..db.models import (
+    CheckReport,
+    Content,
+    Event,
+    MediaAsset,
+    PlatformVersion,
+    Project,
+    Proposal,
+    Verification,
+)
 from ..security.rbac import Actor
 from ..settings_model import ProjectSettings, load_project_settings
 from ..visual.cards import CardRenderer, sha256_bytes, to_jpeg
 from .factbase import FactBase, build_factbase
-from ..core.text import clip
 from .generator import Brief, ContentGenerator, CoreDraft
 from .render import Rendered, render_final
 

@@ -1,0 +1,61 @@
+# Быстрый старт:   docker compose up --build        (демо: SMI_DEMO_MODE=1 docker compose up --build)
+# Продакшен:       cp .env.example .env && заполнить ключи → docker compose --profile tls up -d
+# Замечание: образ и compose собирались «по документации»; в среде разработки Docker отсутствовал, запуск в контейнере не проверялся.
+services:
+  app:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SMI_EMBEDDED_WORKER: "1"
+      SMI_DEMO_MODE: "${SMI_DEMO_MODE:-0}"
+      SMI_ENV: "${SMI_ENV:-dev}"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - data:/data
+      - backups:/backups
+      - ./config:/config:ro
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: ["ALL"]
+
+  # Необязательно: отдельный воркер (для PostgreSQL и нескольких узлов); тогда уберите SMI_EMBEDDED_WORKER у app.
+  # worker:
+  #   build: .
+  #   command: ["worker"]
+  #   env_file: .env
+  #   volumes: [data:/data, backups:/backups, "./config:/config:ro"]
+  #   restart: unless-stopped
+
+  postgres:
+    profiles: ["pg"]
+    image: postgres:16
+    environment:
+      POSTGRES_USER: smi
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD}"
+      POSTGRES_DB: smi
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  caddy:          # TLS: автоматический сертификат Let's Encrypt; SMI_DOMAIN — ваш домен
+    profiles: ["tls"]
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SMI_DOMAIN: "${SMI_DOMAIN:?задайте SMI_DOMAIN}"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [app]
+    restart: unless-stopped
+
+volumes:
+  data:
+  backups:
+  pgdata:
+  caddy_data:

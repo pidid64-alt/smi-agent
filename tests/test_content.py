@@ -1,11 +1,10 @@
-import json
 
 import pytest
 from sqlalchemy import select
 
 from smi_agent.content.render import disclosure_line, render_final, sanitize_tg_html
 from smi_agent.core.errors import ValidationFailed
-from smi_agent.db.models import Content, EditorialCorrection, Event, LlmCall, PlatformVersion, Proposal
+from smi_agent.db.models import Content, EditorialCorrection, Event, LlmCall, Proposal
 from smi_agent.llm.testing import ScriptedLlm
 from smi_agent.settings_model import load_project_settings
 from tests.conftest import RATE_CORE, RATE_PLATFORMS, add_article

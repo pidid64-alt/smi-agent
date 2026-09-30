@@ -29,7 +29,7 @@ def get_ctx(request: Request) -> Container:
 
 
 def client_ip(request: Request) -> str:
-    # за обратным прокси доверяем X-Forwarded-For только если это явно включено (SMI_TRUST_PROXY=1 в окружении прокси-конфига)
+    # за обратным прокси доверяем X-Forwarded-For только если это явно включено (SMI_TRUST_PROXY=1) — иначе заголовок подделывается клиентом
     if getattr(request.app.state, "trust_proxy", False):
         xff = request.headers.get("x-forwarded-for", "")
         if xff:

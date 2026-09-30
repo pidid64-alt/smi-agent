@@ -10,7 +10,17 @@ from typing import Any
 from sqlalchemy import func, select, text
 
 from ..core.enums import AccountStatus, PubState
-from ..db.models import BackupRecord, HealthRecord, JobLease, KillSwitch, LlmCall, Notification, PlatformAccount, Project, Publication
+from ..db.models import (
+    BackupRecord,
+    HealthRecord,
+    JobLease,
+    KillSwitch,
+    LlmCall,
+    Notification,
+    PlatformAccount,
+    Project,
+    Publication,
+)
 from ..publishing.service import STUCK_AFTER
 
 RANK = {"ok": 0, "warn": 1, "fail": 2}

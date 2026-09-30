@@ -13,10 +13,24 @@ from sqlalchemy.orm import Session
 
 from ..core.enums import PubState
 from ..core.errors import ValidationFailed
-from ..db.models import (AuditLog, AudienceSnapshot, Content, Event, ForecastRecord, FunnelItem, FunnelRun, MetricSnapshot, PlatformAccount, Project, Proposal, Publication, Report)
+from ..db.models import (
+    AudienceSnapshot,
+    AuditLog,
+    Content,
+    Event,
+    ForecastRecord,
+    FunnelItem,
+    FunnelRun,
+    MetricSnapshot,
+    PlatformAccount,
+    Project,
+    Proposal,
+    Publication,
+    Report,
+)
 from ..publishing.scheduling import tz_of
 from ..settings_model import load_project_settings
-from .metrics import METRIC_FIELDS, primary_value
+from .metrics import primary_value
 
 PERIODS = {"today": ("hour",), "7d": ("day",), "30d": ("day",), "3m": ("week",), "6m": ("week",), "year": ("month",)}
 METRICS = {"posts", "views", "reach", "engagement", "kz_share", "events", "trend_avg", "followers", "selected"}

@@ -35,17 +35,19 @@ class Container:
         self._wire()
 
     def _wire(self) -> None:
-        from .events.cluster import EventService
-        from .ingestion.service import IngestService
-
         from .analytics.metrics import MetricsService
-        from .security.auth import AuthService
         from .analytics.service import AnalyticsService
         from .checks.service import CheckService
         from .content.service import ContentService
+        from .events.cluster import EventService
         from .funnel.service import FunnelService
+        from .ingestion.service import IngestService
         from .interaction.service import InteractionService
         from .learning.service import LearningService
+        from .llm.client import build_client
+        from .llm.service import LlmService
+        from .ops.backup import BackupService
+        from .ops.health import HealthService
         from .profile.service import ProfileService
         from .publishing.accounts import AccountService
         from .publishing.autopilot import AutopilotService
@@ -53,12 +55,8 @@ class Container:
         from .publishing.scheduling import SchedulingService
         from .publishing.service import PublishingService
         from .scoring.trend import TrendScorer
+        from .security.auth import AuthService
         from .verification.service import VerificationService
-
-        from .ops.backup import BackupService
-        from .ops.health import HealthService
-        from .llm.client import build_client
-        from .llm.service import LlmService
 
         client = self._llm_override
         if client is None:

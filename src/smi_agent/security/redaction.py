@@ -66,7 +66,7 @@ class RedactingFilter(logging.Filter):
             record.msg = redact(str(record.msg))
             if record.args:
                 record.args = tuple(redact(a) if isinstance(a, str) else a for a in (record.args if isinstance(record.args, tuple) else (record.args,)))
-        except Exception:  # noqa: BLE001 — фильтр не должен ломать логирование
+        except Exception:  # noqa: BLE001, S110 — фильтр не должен ломать логирование
             pass
         return True
 

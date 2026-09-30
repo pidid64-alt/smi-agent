@@ -12,7 +12,20 @@ from typing import Any
 from sqlalchemy import select
 
 from ..core.text import sha256_hex, simhash, tokenize
-from ..db.models import (Article, AudienceSnapshot, Content, ForecastRecord, MetricSnapshot, PlatformAccount, PlatformVersion, Project, Proposal, Publication, Source, UserAction)
+from ..db.models import (
+    Article,
+    AudienceSnapshot,
+    Content,
+    ForecastRecord,
+    MetricSnapshot,
+    PlatformAccount,
+    PlatformVersion,
+    Project,
+    Proposal,
+    Publication,
+    Source,
+    UserAction,
+)
 from ..ingestion.features import build_alias_index, compute_features
 from ..ingestion.normalize import canonical_url, url_hash
 from ..security.rbac import Actor

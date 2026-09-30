@@ -21,8 +21,19 @@ from sqlalchemy.orm import Session
 from ..content.render import render_final
 from ..core.enums import AccountStatus, AttemptOutcome, PublishMode, PubState
 from ..core.errors import Conflict, NotFound, ValidationFailed
-from ..db.models import Content, Event, MediaAsset, Notification, PlatformAccount, PlatformVersion, Project, Proposal, PublicationEvent, PublishAttempt
-from ..db.models import Publication
+from ..db.models import (
+    Content,
+    Event,
+    MediaAsset,
+    Notification,
+    PlatformAccount,
+    PlatformVersion,
+    Project,
+    Proposal,
+    Publication,
+    PublicationEvent,
+    PublishAttempt,
+)
 from ..security.rbac import Actor, Perm, authorize
 from ..settings_model import load_project_settings
 from .adapters.base import MediaFile, PublishContext
@@ -99,7 +110,6 @@ class PublishingService:
             report = self.ctx.content.latest_report(s, v.id) or self.ctx.checks.run(s, content, v)
             if acc is None:
                 pub.last_error = {"code": "no_account", "message": f"Не подключён аккаунт {v.platform}"}
-                note = "Нет подключённого аккаунта"
             elif not report.passed:
                 self.transition(s, pub, S.NEEDS_REVIEW, actor, "Проверки не пройдены: " + report.summary)
                 self._notify(s, pub, "warning", "needs_review", f"Требует проверки: {content.content_id} → {v.platform}", report.summary)

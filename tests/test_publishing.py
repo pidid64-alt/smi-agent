@@ -2,15 +2,24 @@ import threading
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from smi_agent.core.enums import PubState
 from smi_agent.core.errors import Conflict, Forbidden, ValidationFailed
-from smi_agent.db.models import AuditLog, Content, Notification, PlatformAccount, Proposal, Publication, PublicationEvent, PublishAttempt, SecretRecord
+from smi_agent.db.models import (
+    AuditLog,
+    Content,
+    Notification,
+    PlatformAccount,
+    Proposal,
+    Publication,
+    PublicationEvent,
+    PublishAttempt,
+    SecretRecord,
+)
 from smi_agent.publishing.adapters.sandbox import SandboxAdapter
 from smi_agent.publishing.service import STUCK_AFTER
 from smi_agent.security.rbac import Actor
-from tests.conftest import add_article
 
 PLATFORMS = ("telegram", "instagram", "facebook")
 

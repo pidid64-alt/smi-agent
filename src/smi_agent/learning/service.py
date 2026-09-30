@@ -10,8 +10,15 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..db.models import Content, EditorialCorrection, Event, LearningEvent, PerformanceStat, ProfileFeature, Proposal
-from ..security.rbac import Actor
+from ..db.models import (
+    Content,
+    EditorialCorrection,
+    Event,
+    LearningEvent,
+    PerformanceStat,
+    ProfileFeature,
+    Proposal,
+)
 
 HALF_LIFE_DAYS = 90.0
 _EMOJI = re.compile("[\U0001F300-\U0001FAFF\u2600-\u27BF]")

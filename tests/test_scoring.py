@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace as NS
 
 import pytest
 from sqlalchemy import select
@@ -7,7 +6,6 @@ from sqlalchemy import select
 from smi_agent.db.models import Event
 from smi_agent.scoring.trend import classify_phase, sat, velocity_windows
 from smi_agent.settings_model import DEFAULT_WEIGHTS, load_project_settings
-from tests.conftest import add_article
 
 NOW = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
 

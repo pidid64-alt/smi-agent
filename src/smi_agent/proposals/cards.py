@@ -8,8 +8,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..core.clock import ensure_utc
 from ..content.factbase import typo_quotes
+from ..core.clock import ensure_utc
 from ..core.enums import RELATION_LABELS, VERIFICATION_LABELS, VerificationStatus
 from ..core.text import detect_language
 from ..db.models import Article, Event, Verification
