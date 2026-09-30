@@ -92,3 +92,18 @@ def test_demo_command_is_refused_in_production(cli_env, monkeypatch):
     get_settings.cache_clear()
     with pytest.raises(SystemExit, match="production"):
         main(["demo", "seed"])
+
+
+def test_weak_admin_password_is_reported_as_a_message_not_a_traceback(cli_env, monkeypatch):
+    monkeypatch.setenv("SMI_ADMIN_PASSWORD", "admin admin admin admin")  # содержит имя пользователя — политика паролей отклоняет
+    with pytest.raises(SystemExit, match="Ошибка: .*имя пользователя"):
+        main(["init", "--admin", "admin", "--project", "main"])
+    monkeypatch.setenv("SMI_ADMIN_PASSWORD", "a perfectly fine long secret")
+    main(["init", "--admin", "admin", "--project", "main"])  # отказ ничего не сломал: повторный init проходит
+    from smi_agent.container import Container
+    from smi_agent.db.models import User
+
+    ctx = Container(get_settings())
+    with ctx.db.read() as s:
+        assert s.scalars(select(User).where(User.username == "admin")).one().is_superadmin
+    ctx.close()

@@ -10,6 +10,12 @@ smi-agent init --admin admin --project main
 smi-agent serve --host 127.0.0.1 --port 8000     # + обратный прокси с TLS
 smi-agent worker                                  # либо SMI_EMBEDDED_WORKER=1
 ```
+**Windows (один узел, SQLite, без Docker):** пошаговая инструкция — в README, «Запуск на Windows». Кратко: `py -m venv .venv`, `.\.venv\Scripts\python -m pip install .`, файл `.env` в UTF-8 (программа читает его сама — `export $(…)` не нужен), затем `smi-agent init`, `smi-agent serve` и `smi-agent worker` (или `SMI_EMBEDDED_WORKER=1`). Особенности:
+- папки `data\` и `backups\` — на локальном диске вне OneDrive/Dropbox и сетевых папок (SQLite в режиме WAL на них работает ненадёжно);
+- восстановление из копии (`smi-agent backup restore … --target …`) — **только при остановленном сервере**: открытые файлы БД на Windows нельзя заменить или удалить;
+- автозапуск (не проверялся): Планировщик заданий — триггер «При запуске компьютера», действие `…\.venv\Scripts\smi-agent.exe` с аргументом `serve`, «Рабочая папка» — каталог с `.env`; либо оформить службой сторонним инструментом (например, NSSM);
+- production на Windows не проверялся (HTTPS-прокси, MFA, автозапуск): для него рекомендуются Linux и Docker.
+
 **Docker:** `docker compose up -d --build` (профиль `tls` добавляет Caddy с автоматическим HTTPS, профиль `pg` — PostgreSQL). Файлы написаны по документации; в среде разработки Docker не запускался — проверьте сборку на своей инфраструктуре.
 
 Обязательно в production: `SMI_ENV=production`, `SMI_PUBLIC_URL=https://…`, `SMI_MASTER_KEYS`, `SMI_BACKUP_KEY`; приложение при неверной конфигурации предупреждает в «Система → Состояние → config» (и не стартует без мастер-ключа). Перечень переменных — в `.env.example`.

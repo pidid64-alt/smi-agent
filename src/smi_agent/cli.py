@@ -14,6 +14,8 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from .core.errors import AppError
+
 
 def _ctx():
     from .config import get_settings
@@ -320,7 +322,10 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("health", help="состояние системы (код выхода 2 при критической проблеме)").set_defaults(fn=cmd_health)
     sub.add_parser("audit-verify", help="проверить хеш-цепочку журнала аудита").set_defaults(fn=cmd_audit)
     args = p.parse_args(argv)
-    args.fn(args)
+    try:
+        args.fn(args)
+    except AppError as e:  # ожидаемые отказы (политика пароля, «не найдено» и т. п.) — сообщением, а не трассировкой Python
+        sys.exit(f"Ошибка: {e.message}")
 
 
 if __name__ == "__main__":

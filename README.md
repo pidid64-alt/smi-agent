@@ -52,9 +52,46 @@ pip install -e ".[dev]"
 scripts/run-demo.sh          # http://localhost:8000   логин: demo   пароль: smi-agent-showcase
 ```
 
+Без bash — одна и та же команда на Windows, Linux и macOS: `smi-agent serve --demo` (данные во временной папке, при каждом запуске создаются заново; `--port`, `--demo-dir`). Пошаговая инструкция для Windows — ниже.
+
 Или в Docker: `SMI_DEMO_MODE=1 docker compose up --build` (см. замечание о Docker ниже).
 
 Что попробовать: **5 предложений → «Беру» → Контент → «Создать публикации» → Публикации → «Подтвердить»**; затем **Управление → Автопилот** (включается админом, политика + режим аккаунта «auto»), и красная кнопка **«ОСТАНОВИТЬ АВТОПИЛОТ»** в шапке.
+
+### Запуск на Windows (без WSL и Docker)
+
+Нужен **Python 3.11 или новее**: [python.org/downloads](https://www.python.org/downloads/) (в установщике отметьте **Add python.exe to PATH**) или `winget install Python.Python.3.13`. Проверка: `py --version`.
+
+**Вариант 1 — двойной клик.** Скачайте репозиторий (*Code → Download ZIP* или `git clone`), распакуйте и запустите `scripts\run-demo.cmd`. Первый запуск создаёт окружение и ставит зависимости (1–2 минуты), затем печатает адрес: <http://localhost:8000>, логин `demo`, пароль `smi-agent-showcase`. Остановка — `Ctrl+C` (на вопрос о завершении пакетного файла ответьте `Y`). Если Windows предупреждает, что не удалось проверить издателя, — это обычное предупреждение для файла из интернета; скрипт короткий, его можно прочитать в Блокноте (при `git clone` предупреждения нет). Аргументы передаются дальше: `scripts\run-demo.cmd --port 8080`.
+
+**Вариант 2 — PowerShell в папке проекта:**
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\smi-agent.exe serve --demo
+```
+
+Окружение активировать не нужно — и тогда не мешает политика PowerShell («выполнение сценариев отключено в этой системе»). Если всё же хотите короткое `smi-agent …`: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, затем `.\.venv\Scripts\Activate.ps1`.
+
+**Рабочая установка (один узел, SQLite)** — в PowerShell, из папки проекта:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install .
+Set-Content -Encoding utf8 .env "SMI_ENV=dev","SMI_EMBEDDED_WORKER=1"    # файл настроек (можно создать и в Блокноте — кодировка UTF-8)
+.\.venv\Scripts\smi-agent.exe init --admin admin --project main   # пароль спросит интерактивно
+.\.venv\Scripts\smi-agent.exe serve
+```
+
+Для локального запуска в `.env` достаточно двух строк: `SMI_ENV=dev` и `SMI_EMBEDDED_WORKER=1` (фоновые задания внутри сервера). После `serve` откройте <http://localhost:8000> и войдите под созданным администратором. Что важно на Windows:
+
+- **Не создавайте `.env` командой `echo … > .env`**: в Windows PowerShell 5.1 она пишет UTF-16, и программа остановится с сообщением об этом. Используйте Блокнот (UTF-8) или `Set-Content -Encoding utf8`, как выше. Запускайте команды из папки, где лежит `.env`.
+- Значения из `.env.example` (`/data`, `/backups`, `SMI_ENV=production`) рассчитаны на Docker/Linux — не копируйте их как есть. Пути на Windows: `SMI_DATA_DIR=C:\smi\data`, `SMI_DATABASE_URL=sqlite:///C:/smi/smi_agent.db` (три слэша после `sqlite:` и прямые слэши в пути).
+- **Не держите `data\` и `backups\` в OneDrive/Dropbox и на сетевых дисках**: SQLite (режим WAL) на них работает ненадёжно, синхронизация блокирует файлы («database is locked»). Папки «Документы» и «Рабочий стол» часто синхронизируются OneDrive — выберите, например, `C:\smi`.
+- Права `0600` на файлы ключей на Windows не применяются: доступ определяют права папки. Для production ключи храните в переменных окружения или менеджере секретов ([docs/SECURITY.md](docs/SECURITY.md)).
+- Порт занят — `--port 8080`. Сервер слушает только `127.0.0.1`, поэтому предупреждения брандмауэра нет.
+- **Production на Windows не проверялся** (HTTPS-прокси, MFA, автозапуск службой): для него рекомендуются Linux и Docker. Автозапуск см. [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ## Рабочая установка
 
@@ -72,7 +109,7 @@ smi-agent worker                                # фоновые задания 
 
 ## Статус: что реализовано и что проверено (честно)
 
-Проверено автоматически: **262 теста** (`pytest`, ~2 минуты, без сети) + ручной прогон интерфейса в headless-Chromium (сквозной сценарий демо без ошибок в консоли).
+Проверено автоматически: **277 тестов** (`pytest`, ~2 минуты, без сети; в CI — на Linux и Windows, Python 3.11 и 3.14) + ручной прогон интерфейса в headless-Chromium (сквозной сценарий демо без ошибок в консоли).
 
 | Область | Статус |
 |---|---|
@@ -84,6 +121,7 @@ smi-agent worker                                # фоновые задания 
 | Публикация: конечный автомат, атомарный захват, идемпотентность, сверка, повторы, выключатель, автопилот | ✅ тесты (песочница + `MockTransport`) |
 | **Реальные API Telegram / Instagram / Facebook** | ⚠️ **не проверялись**: из среды разработки недоступны; адаптеры написаны по документации и тестируются на моках ответов |
 | Реальные ленты КЗ-СМИ | ⚠️ проверены вручную только NUR.KZ и Kursiv (через веб-поиск); остальные адреса помечены «не проверена» — система покажет сбои опроса |
+| **Windows** | ✅ CI на GitHub Actions (`windows-latest`, Python 3.11 и 3.14): установка, все тесты, демо `smi-agent serve --demo` (вход → пять предложений → выбор темы → материал → карточка JPEG) и лаунчер `scripts\run-demo.cmd`. ⚠️ Это Windows Server с английской локалью; на обычной Windows 10/11 вручную **не запускалось**; production на Windows не проверялся |
 | PostgreSQL | ⚠️ код переносим (SQLAlchemy, `FOR UPDATE`, триггеры для PG), но **не запускался** |
 | Docker / compose / Caddy | ⚠️ файлы написаны, **не собирались** (Docker в среде отсутствовал) |
 | Видео для Reels | ➖ генерация видео не выполняется: сценарий и обложка — да; публикация Reels требует загрузки готового видео |
@@ -122,8 +160,8 @@ smi-agent worker                                # фоновые задания 
 
 ```bash
 pip install -e ".[dev]"
-ruff check src tests
-pytest -q                     # 262 теста
+ruff check src tests scripts
+pytest -q                     # 277 тестов
 ```
 
 Структура: `src/smi_agent/{ingestion,events,scoring,funnel,verification,proposals,interaction,learning,profile,content,visual,checks,publishing,analytics,ops,security,audit,llm,api,web,demo}`; тестовые данные — вымышленные (`tests/fixtures/corpus.py`, `src/smi_agent/demo/corpus.py`).
