@@ -81,7 +81,8 @@ class FunnelService:
         annotate_repeats(ctx, s, project_id, active)
         ctx.scoring.score_recent(s, project_id, event_ids=[e.id for e in active])
         for e in active:
-            e.stage = "pool"
+            if e.stage != "published":  # опубликованное остаётся таковым; вернуться в пул может только «новая стадия» (§51)
+                e.stage = "pool"
 
         items: list[FunnelItem] = []
 
@@ -97,7 +98,9 @@ class FunnelService:
             e = c.ev
             why: str | None = None
             age_h = (now - e.first_published_at).total_seconds() / 3600
-            if e.phase == "stale" or age_h > fc.max_event_age_hours:
+            if e.stage == "published" and (e.flags or {}).get("repeat_kind") != "new_stage":
+                why = "уже опубликовано"
+            elif e.phase == "stale" or age_h > fc.max_event_age_hours:
                 why = "устарело"
             elif c.score < fc.min_trend_score:
                 why = f"Trend Score {c.score:.0f} ниже порога {fc.min_trend_score:.0f}"

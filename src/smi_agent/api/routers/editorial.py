@@ -66,9 +66,17 @@ class ConfirmIn(BaseModel):
 def events(project_id: int, stage: str | None = None, category: str | None = None, limit_: int = Query(50, alias="limit", le=200), actor: Actor = Depends(project_actor), ctx: Container = Depends(get_ctx)):
     require(actor, Perm.AGENDA_VIEW)
     with ctx.db.read() as s:
+        from datetime import timedelta
+
+        from ...db.models import Project
+        from ...settings_model import load_project_settings
+
+        cfg = load_project_settings(s.get(Project, project_id).settings)
         q = select(Event).where(Event.project_id == project_id, Event.merged_into_id.is_(None)).order_by(Event.trend_score.desc()).limit(limit_)
         if stage:
             q = q.where(Event.stage == stage)
+        else:  # по умолчанию — активная повестка: без уже опубликованных/отсеянных и без давно устаревших
+            q = q.where(Event.stage.not_in(["published", "dropped"]), Event.last_update_at >= ctx.clock.now() - timedelta(hours=cfg.funnel.max_event_age_hours))
         if category:
             q = q.where(Event.category == category)
         return {"events": [{"id": e.id, "title": e.title, "category": e.category, "category_label": ctx.know.category_label(e.category), "geo": e.geo, "trend_score": e.trend_score, "phase": e.phase, "velocity": e.velocity, "n_independent": e.n_independent, "n_articles": e.n_articles, "verification": e.verification_status, "stage": e.stage, "last_update_at": e.last_update_at.isoformat()} for e in s.scalars(q)]}
@@ -121,7 +129,7 @@ def commands(project_id: int, body: CommandIn, actor: Actor = Depends(project_ac
 
 
 @router.post("/p/{project_id}/proposals/{slot}/select", dependencies=[Depends(limit("commands", 60, 60))])
-def select(project_id: int, slot: int, body: SelectIn, actor: Actor = Depends(project_actor), ctx: Container = Depends(get_ctx)):
+def select_proposal(project_id: int, slot: int, body: SelectIn, actor: Actor = Depends(project_actor), ctx: Container = Depends(get_ctx)):
     require(actor, Perm.PROPOSALS_ACT)
     return ctx.interaction.select(project_id, actor, slot, {k: v for k, v in body.model_dump().items() if v}).__dict__
 

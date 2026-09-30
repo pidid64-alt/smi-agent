@@ -82,7 +82,8 @@ _STRAIGHT_Q = re.compile(r'"([^"]{3,})"')
 
 
 def typo_quotes(text: str) -> str:
-    return _STRAIGHT_Q.sub(r"«\1»", text)
+    """Типографика для публикаций: "…" → «…», пробельный дефис « - » → « — » (нормализация текста при разборе их обезличивает)."""
+    return _STRAIGHT_Q.sub(r"«\1»", text).replace(" - ", " — ")
 
 
 def brand_name(name: str) -> str:

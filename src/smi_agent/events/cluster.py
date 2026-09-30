@@ -211,7 +211,7 @@ class EventService:
         return ArtVec(
             id=-p.id, source_id=first.source_id, source_key="", group="", origin="", reliability=0.7, tier="quality", country="", pub=p.first_pub or first.pub,
             lang=p.dominant_lang, title_stems=frozenset(p.title_stems), tf={k: min(v, 2.0) for k, v in p.tf.items()}, ent=dict(p.ent), title_ent=frozenset(p.title_ent),
-            nums=frozenset(p.nums), quotes=frozenset(p.quotes), dates=frozenset(p.dates), sim=first.sim,
+            nums=frozenset(p.nums), numd={k: frozenset(v) for k, v in p.numd.items()}, quotes=frozenset(p.quotes), dates=frozenset(p.dates), sim=first.sim,
         )  # fmt: skip
 
     def _merge(self, s: Session, big: int, small: int, profs, members, ev_by_id, vec_by_art) -> None:
@@ -323,6 +323,10 @@ class EventService:
             kz_hits.update(g.kz_hits)
         ev.category = cat_scores.most_common(1)[0][0] if cat_scores and cat_scores.most_common(1)[0][1] >= 2.5 else (rep.source.category_hint or "other")
         ev.subtopics = [k for k, _ in subtopics.most_common(4)]
+        # местная новость без явных топонимов: все независимые источники — казахстанские и мировых маркеров нет → казахстанская повестка
+        direct_vecs = [v for o, v in seen_origin.items() if o not in cited_only] or list(seen_origin.values())
+        if direct_vecs and sum(1 for v in direct_vecs if v.country == "KZ") / len(direct_vecs) >= 0.75 and world < 0.2:
+            kz = max(kz, 0.5)
         foreign_indep = len({v.origin for v in seen_origin.values() if v.country and v.country != "KZ"})
         world = min(1.0, world + 0.08 * max(0, foreign_indep - 1)) if foreign_indep else world
         ev.kz_relevance, ev.world_relevance = round(kz, 3), round(world, 3)

@@ -214,3 +214,23 @@ def test_secret_in_text_fails_check(llm_ctx, corpus, pipeline, admin):
         ctx.profile.update_settings(s, corpus, admin, {"forbidden_words": ["admin@"]})
         nv = ctx.content.edit_version(s, corpus, d["id"], "facebook", admin, body="Ставка 16,5%. Писать на admin@example.kz!")
         assert any(r["key"] == "forbidden" and r["status"] == "fail" for r in ctx.content.latest_report(s, nv.id).results)
+
+
+def _fb(quotes=()):
+    from smi_agent.content.factbase import Fact, FactBase, Quote
+
+    return FactBase(event_id=1, title="t", category="finance", geo="kz", facts=[Fact(1, "Ставка 9,5%", ["s"], 2, None, [{"raw": "9,5%", "v": 9.5, "u": "pct"}])], quotes=[Quote(q, None, "s", "S") for q in quotes], dates=[], entities=[], sources=[], unknowns=[], interpretations=[], verification={}, languages=["ru"], sensitive={}, political=False, source_texts={}, all_numbers=[{"raw": "9,5%", "value": 9.5, "unit": "pct"}])
+
+
+def test_company_names_in_guillemets_are_not_invented_quotes(know):
+    from smi_agent.content.generator import validate_generated
+
+    fb = _fb()
+    ok = validate_generated("Банк «Алтын-Финанс» снизил ставку до 9,5% годовых, сообщили в «Сарыарка Медиа».", fb, "ru", know)
+    assert ok == []  # названия в «ёлочках» — не цитаты
+    bad = validate_generated("Глава банка заявил: «Мы гарантируем снижение ставок до нуля уже завтра».", fb, "ru", know)
+    assert any("цитата" in p for p in bad)  # а длинная выдуманная цитата — нарушение
+    allowed = validate_generated("Глава банка заявил: «Снижение ставки сделает жильё доступнее для семей».", _fb(["Снижение ставки сделает жильё доступнее для семей"]), "ru", know)
+    assert allowed == []
+    derived = validate_generated("Ставка снизилась на 1,7 пункта до 9,5%.", fb, "ru", know)
+    assert any("1,7" in p for p in derived)  # производные числа (разность) в базе фактов отсутствуют — отклоняются, а не «додумываются»

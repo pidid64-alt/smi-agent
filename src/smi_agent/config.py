@@ -44,8 +44,6 @@ class Settings(BaseSettings):
     llm_model: str = ""
     llm_timeout_s: float = 60.0
     llm_daily_call_budget: int = 2000
-    embedding_provider: Literal["hashing", "openai_compat"] = "hashing"
-    embedding_model: str = ""
     # Платформы
     meta_graph_version: str = "v26.0"
     meta_app_id: str = ""

@@ -53,7 +53,7 @@ def me(principal: Principal = Depends(get_principal), ctx: Container = Depends(g
 
     with ctx.db.read() as s:
         u = s.get(User, principal.user_id)
-        return {"user": ctx.auth.user_dict(s, u), "csrf": principal.csrf, "mfa_setup_required": not principal.mfa_ok, "via": principal.via}
+        return {"user": ctx.auth.user_dict(s, u), "csrf": principal.csrf, "mfa_setup_required": not principal.mfa_ok, "via": principal.via, "demo": ctx.settings.demo_mode, "env": ctx.settings.env}
 
 
 @router.post("/password", dependencies=[Depends(limit("password", 5, 60))])

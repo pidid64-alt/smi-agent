@@ -105,7 +105,7 @@ class InteractionService:
             self.ctx.learning.record_selection(s, project_id, p, ev, siblings, overrides=overrides)
             self._log(s, project_id, actor, ActionKind.MODIFY if overrides else ActionKind.SELECT, p, raw or f"Беру №{slot}", {"overrides": overrides, "content_id": content.content_id})
             self.ctx.audit.log(s, actor, "proposal.select", project_id=project_id, target_type="proposal", target_id=p.id, details={"slot": slot, "content_id": content.content_id, "overrides": overrides})
-            msg = f"Беру №{slot}: «{ev.title[:80]}». Черновик {content.content_id} подготовлен для: {', '.join(v.platform for v in self.ctx.content.current_versions(s, content.id))}."
+            msg = f"Беру №{slot}: {ev.title[:80]}. Черновик {content.content_id} подготовлен для: {', '.join(v.platform for v in self.ctx.content.current_versions(s, content.id))}."
             if overrides.get("emphasis_text"):
                 msg += f" Акцент: {overrides['emphasis_text']}."
             return ActionResult(slot, "select", True, msg, content.content_id, p.id, {"content_pk": content.id})
@@ -157,7 +157,7 @@ class InteractionService:
         self.ctx.learning.record_replace(s, project_id, p, ev)
         self._log(s, project_id, actor, ActionKind.REPLACE, p, raw or f"Замени №{slot}", {"new_event_id": best.ev.id})
         self.ctx.audit.log(s, actor, "proposal.replace", project_id=project_id, target_type="proposal", target_id=p.id, details={"slot": slot, "new_proposal": new.id})
-        return ActionResult(slot, "replace", True, f"№{slot} заменена: «{best.ev.title[:80]}».", proposal_id=new.id, data={"card": card})
+        return ActionResult(slot, "replace", True, f"№{slot} заменена: {best.ev.title[:80]}.", proposal_id=new.id, data={"card": card})
 
     def more_info(self, s: Session, project_id: int, actor: Actor, slot: int, *, raw: str = "") -> ActionResult:
         p = self._by_slot(s, project_id, slot)

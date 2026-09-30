@@ -304,3 +304,26 @@ def test_audit_export_and_health_permissions(api):
     assert api.post("/api/backups", headers=H(api)).status_code == 200 and api.post("/api/backups/restore-test", headers=H(api)).json()["ok"]
     assert api.get("/api/backups").json()["backups"][0]["encrypted"] is True
     assert "path" not in api.post("/api/backups", headers=H(api)).json()  # пути на сервере не раскрываем
+
+
+def test_agenda_and_event_endpoints(api):
+    login(api, "editor")
+    evs = api.get(P(api, "/events?limit=20")).json()["events"]
+    assert evs and evs[0]["trend_score"] >= evs[-1]["trend_score"] and {"id", "title", "phase", "n_independent", "category_label"} <= set(evs[0])
+    cat = api.get(P(api, f"/events?category={evs[0]['category']}")).json()["events"]
+    assert all(e["category"] == evs[0]["category"] for e in cat)
+    d = api.get(P(api, f"/events/{evs[0]['id']}")).json()
+    assert d["components"]["values"] and d["timeline"] and d["articles"]
+    assert api.get(P(api, "/events/424242")).status_code == 404
+
+
+def test_select_endpoint_with_structured_overrides(api):
+    login(api, "editor")
+    api.post(P(api, "/funnel/run"), headers=H(api))
+    r = api.post(P(api, "/proposals/1/select"), json={"emphasis": "kazakhstan", "length": "shorter", "platforms": ["telegram"]}, headers=H(api))
+    assert r.status_code == 200 and r.json()["ok"] and r.json()["content_id"].startswith("Content-2026-")
+    cpk = r.json()["data"]["content_pk"]
+    d = api.get(P(api, f"/content/{cpk}")).json()
+    assert [v["platform"] for v in d["versions"]] == ["telegram"] and "Казахстан" in d["angle"]
+    assert api.post(P(api, "/proposals/1/select"), json={}, headers=H(api)).status_code == 422  # повторный выбор отклонён
+    assert api.post(P(api, "/proposals/2/select"), json={"language": "de"}, headers=H(api)).status_code == 422  # язык вне ru/kk/en

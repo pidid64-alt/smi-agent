@@ -9,7 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..core.clock import ensure_utc
+from ..content.factbase import typo_quotes
 from ..core.enums import RELATION_LABELS, VERIFICATION_LABELS, VerificationStatus
+from ..core.text import detect_language
 from ..db.models import Article, Event, Verification
 
 CATEGORY_ANGLES = {
@@ -129,9 +131,11 @@ def build_card(s: Session, ev: Event, ver: Verification | None, now: datetime, k
             "published_at": ensure_utc(a.published_at).isoformat(), "relation": a.relation, "relation_label": RELATION_LABELS.get(a.relation, a.relation),
             "independent": a.independent, "official": bool(a.source.is_official),
         })  # fmt: skip
-    facts = [f["text"] for f in (ver.facts if ver else (ev.features or {}).get("facts", []))][:4]
-    if len(facts) < 2:
-        facts = [f["text"] for f in (ev.features or {}).get("facts", [])][:4]
+    all_facts = [f["text"] for f in (ver.facts if ver and ver.facts else (ev.features or {}).get("facts", []))]
+    if len(all_facts) < 2:
+        all_facts = [f["text"] for f in (ev.features or {}).get("facts", [])]
+    same_lang = [t for t in all_facts if detect_language(t) == "ru"]  # карточка — на языке интерфейса, если фактов на нём достаточно
+    facts = [typo_quotes(t) for t in (same_lang if len(same_lang) >= 2 else all_facts)][:4]
     status = ver.status if ver else (ev.verification_status or VerificationStatus.NEEDS_CHECK.value)
     try:
         label = VERIFICATION_LABELS[VerificationStatus(status)]

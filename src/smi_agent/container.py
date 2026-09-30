@@ -60,7 +60,14 @@ class Container:
         from .llm.client import build_client
         from .llm.service import LlmService
 
-        self.llm = LlmService(self, self._llm_override if self._llm_override is not None else build_client(self.settings))
+        client = self._llm_override
+        if client is None:
+            client = build_client(self.settings)
+        if client is None and self.settings.demo_mode and not self.settings.is_production:
+            from .demo.llm import DemoLlm
+
+            client = DemoLlm()  # только для вымышленных демо-новостей; на остальное честно не отвечает
+        self.llm = LlmService(self, client)
         self.ingest = IngestService(self)
         self.events = EventService(self)
         self.scoring = TrendScorer(self)

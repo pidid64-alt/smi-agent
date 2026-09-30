@@ -79,7 +79,10 @@ def validate_generated(text: str, fb: FactBase, language: str, know: Any) -> lis
             problems.append(f"число «{n['raw']}» отсутствует в базе фактов")
     allowed_quotes = [re.sub(r"[^\w\s]", "", q.text.lower()) for q in fb.quotes]
     for m in _QUOTE_RX.finditer(text):
-        q = re.sub(r"[^\w\s]", "", next(g for g in m.groups() if g).lower())
+        raw_q = next(g for g in m.groups() if g)
+        if len(raw_q.split()) < 4:  # «Алтын-Финанс», «Сарыарка» — названия, а не цитаты (как и при извлечении цитат из источников)
+            continue
+        q = re.sub(r"[^\w\s]", "", raw_q.lower())
         if not any(q in aq or aq in q for aq in allowed_quotes):
             problems.append("в тексте есть цитата, которой нет в базе фактов")
     allowed_urls = {s["url"] for s in fb.sources}
@@ -152,7 +155,7 @@ class ContentGenerator:
             "3) не пиши оценок и прогнозов от лица источников; 4) переформулируй своими словами, не копируй фразы; "
             + ("5) тема политическая: нейтральный тон, без агитации, оценок и прогнозов, спорные утверждения атрибутируй; " if brief.political else "")
             + "6) в блоке unknowns — то, что пока неизвестно: не выдавай это за факт.\n"
-            f"{isolate(json.dumps(fb.for_prompt(), ensure_ascii=False), 6000)}\n"
+            f"{isolate(json.dumps(fb.for_prompt(), ensure_ascii=False), 14000)}\n"
             'Верни JSON: {"headline": str, "lead": str, "points": [str, ...3-5], "context": str, "why_it_matters": str, "used_fact_ids": [int]}'
         )
         data = self.ctx.llm.run_json("core_draft", user, required={"headline": str, "lead": str, "points": list}, project_id=project_id, max_tokens=1400)
@@ -202,8 +205,6 @@ class ContentGenerator:
             used.append(f.id)
         sub = next((st for st in fb.subtopics if st in WHY_LIBRARY), None) or (fb.category if fb.category in WHY_LIBRARY else None)
         why = WHY_LIBRARY[sub].get(lang, "") if sub else ""
-        if fb.unknowns:
-            notes.append("Неизвестно/требует проверки: " + "; ".join(fb.unknowns[:2]))
         return CoreDraft(headline=self._pick_headline(fb, lang), lead="", points=points, context="", why_it_matters=why, language=lang, generator="heuristic", used_fact_ids=used, notes=notes)
 
     def _pick_headline(self, fb: FactBase, lang: str) -> str:
@@ -232,6 +233,7 @@ class ContentGenerator:
 
     def _adapt_llm(self, platform: str, core: CoreDraft, fb: FactBase, brief: Brief) -> dict[str, Any] | None:
         lim = LIMITS[platform]
+        payload = json.dumps({"core": {"headline": core.headline, "lead": core.lead, "points": core.points, "context": core.context, "why_it_matters": core.why_it_matters}, "fact_base": fb.for_prompt()}, ensure_ascii=False)
         spec = {
             "telegram": "Пост для Telegram-канала: заголовок жирным (<b>), абзацы, 3–5 коротких пунктов, строка источников; до 1800 знаков; 0–3 хэштега; допустимы теги <b>, <i>.",
             "instagram": "Подпись к посту Instagram: сильная первая строка (до 125 знаков), короткие абзацы, 3–8 хэштегов; до 1500 знаков; без ссылок. Верни также slides — список из 4–8 коротких текстов карусели (до 140 знаков каждый) и reels — {hook, beats:[...3-5], cta}.",
@@ -240,7 +242,7 @@ class ContentGenerator:
         user = (
             f"Язык: {brief.language}. Тон: {brief.tone}. Платформа: {platform}. {spec}\n"
             "Пиши специально под платформу (не копируй текст других платформ), только факты из fact_base/core, числа — точно, оригинальными формулировками.\n"
-            f"{isolate(json.dumps({'core': {'headline': core.headline, 'lead': core.lead, 'points': core.points, 'context': core.context, 'why': core.why_it_matters}, 'fact_base': fb.for_prompt()}, ensure_ascii=False), 6000)}\n"
+            f"{isolate(payload, 14000)}\n"
             'Верни JSON: {"title": str, "body": str, "hashtags": [str], "slides": [str], "reels": {"hook": str, "beats": [str], "cta": str}}'
         )
         data = self.ctx.llm.run_json(f"adapt_{platform}", user, required={"body": str}, max_tokens=1300)

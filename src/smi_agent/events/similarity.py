@@ -31,6 +31,7 @@ class ArtVec:
     ent: dict[str, float]
     title_ent: frozenset[str]
     nums: frozenset[str]
+    numd: dict[str, frozenset[str]]
     quotes: frozenset[str]
     dates: frozenset[str]
     sim: int
@@ -40,13 +41,18 @@ class ArtVec:
 
 
 def _num_key(n: dict[str, Any]) -> str:
-    return f"{n.get('u', '')}:{float(n['v']):.3g}"
+    return f"{float(n['v']):.3g}"
+
+
+def unit_compatible(a: frozenset[str] | set[str], b: frozenset[str] | set[str]) -> bool:
+    """«7,8 млн тонн» и «7.8 million tonnes» — одно число: единица может быть не распознана на одном из языков."""
+    return not a or not b or "" in a or "" in b or bool(a & b)
 
 
 def num_specificity(key: str) -> float:
     """Круглые числа (4%, 500 тыс.) менее специфичны, чем 16,5% или 12,3%."""
     try:
-        val = key.split(":", 1)[1]
+        val = key.split(":", 1)[-1]
         digits = val.replace(".", "").replace("-", "").lstrip("0")
         if "e" in val:
             digits = val.split("e")[0].replace(".", "")
@@ -82,10 +88,13 @@ def make_vec(a: Any, *, origin: str, group: str) -> ArtVec:
     for st in title_stems:
         tf.setdefault(st, 2.0)
     ent, tent = entity_word_keys(f.get("entities", []))
+    numd: dict[str, set[str]] = {}
+    for n in f.get("numbers", []):
+        numd.setdefault(_num_key(n), set()).add(n.get("u", ""))
     return ArtVec(
         id=a.id, source_id=a.source_id, source_key=a.source.key, group=group, origin=origin, reliability=a.source.reliability, tier=a.source.tier,
         country=a.source.country, pub=a.published_at, lang=lang, title_stems=title_stems, tf=tf, ent=ent, title_ent=tent,
-        nums=frozenset(_num_key(n) for n in f.get("numbers", [])), quotes=frozenset(q["norm"] for q in f.get("quotes", [])),
+        nums=frozenset(numd), numd={k: frozenset(v) for k, v in numd.items()}, quotes=frozenset(q["norm"] for q in f.get("quotes", [])),
         dates=frozenset(f.get("dates", [])), sim=int(a.simhash or "0", 16), cites=tuple(f.get("attribution", {}).get("keys", [])),
         has_full_text=bool(a.has_full_text), is_official=bool(a.source.is_official),
     )  # fmt: skip
@@ -96,6 +105,8 @@ class EventProf:
     id: int
     members: list[ArtVec] = field(default_factory=list)
     tf: Counter = field(default_factory=Counter)
+    tf_by_lang: dict[str, Counter] = field(default_factory=dict)
+    numd: dict[str, set[str]] = field(default_factory=dict)
     ent: dict[str, float] = field(default_factory=dict)
     title_ent: set[str] = field(default_factory=set)
     title_stems: Counter = field(default_factory=Counter)
@@ -108,8 +119,12 @@ class EventProf:
 
     def add(self, v: ArtVec) -> None:
         self.members.append(v)
+        lang_tf = self.tf_by_lang.setdefault(v.lang, Counter())
         for s, w in v.tf.items():
             self.tf[s] += w
+            lang_tf[s] += w
+        for k, units in v.numd.items():
+            self.numd.setdefault(k, set()).update(units)
         for k, w in v.ent.items():
             self.ent[k] = max(self.ent.get(k, 0.0), w)
         self.title_ent |= v.title_ent
@@ -174,15 +189,17 @@ def weighted_overlap(a: dict[str, float], b: dict[str, float]) -> float:
 
 
 def pair_score(v: ArtVec, prof: EventProf, idf: IdfFn) -> PairScore:
-    cross = v.lang != prof.dominant_lang and v.lang not in prof.langs
-    cos = cosine_sparse(_tfidf(v.tf, idf, False), _tfidf(dict(prof.tf), idf, True)) if not cross else 0.0
+    """Близость материала к событию. Два независимых пути: (1) лексика на языке материала, (2) сущности+числа (не зависит от языка).
+    Материал присоединяется, если сработал любой из них со своими порогами."""
+    same_lang = v.lang in prof.langs
+    cos = cosine_sparse(_tfidf(v.tf, idf, False), _tfidf(dict(prof.tf_by_lang.get(v.lang, {})), idf, True)) if same_lang else 0.0
     tj_a, tj_b = set(v.title_stems), set(prof.title_stems)
     union = tj_a | tj_b
-    title_j = (sum(idf(s) for s in tj_a & tj_b) / sum(idf(s) for s in union)) if union and not cross else 0.0
+    title_j = (sum(idf(s) for s in tj_a & tj_b) / sum(idf(s) for s in union)) if union and same_lang else 0.0
     shared_keys = set(v.ent) & set(prof.ent)
     ent = weighted_overlap(v.ent, prof.ent)
     shared_title = len(set(v.title_ent) & (set(prof.title_ent) | set(prof.ent)))
-    shared_nums = v.nums & prof.nums
+    shared_nums = {k for k in (v.nums & prof.nums) if unit_compatible(v.numd.get(k, frozenset()), prof.numd.get(k, set()))}
     shared_num = len(shared_nums)
     shared_num_w = sum(num_specificity(k) for k in shared_nums)
     num = min(1.0, shared_num_w / max(1.0, min(len(v.nums), len(prof.nums)) * 0.75)) if v.nums and prof.nums else 0.0
@@ -192,27 +209,31 @@ def pair_score(v: ArtVec, prof: EventProf, idf: IdfFn) -> PairScore:
     gap_h = abs((v.pub - center).total_seconds()) / 3600
     tfac = 1.0 if gap_h <= 24 else max(0.35, 1.0 - (gap_h - 24) / 70)
     reasons: list[str] = []
-    if not cross:
-        score = 0.44 * cos + 0.14 * title_j + 0.18 * ent + 0.16 * num + 0.06 * quote
+    score_lex, attach_lex = 0.0, False
+    if same_lang:
+        score_lex = 0.44 * cos + 0.14 * title_j + 0.18 * ent + 0.16 * num + 0.06 * quote
         if quote and shared_keys:
-            score += 0.10
-        score *= 0.75 + 0.25 * tfac
-        attach = score >= 0.30 and cos >= 0.15 and (len(shared_keys) >= 2 or shared_num_w >= 0.75 or cos >= 0.5) and (shared_title >= 1 or title_j >= 0.15 or cos >= 0.4 or shared_num_w >= 1.5)
-    else:
-        score = 0.40 * ent + 0.35 * num + 0.10 * date + 0.15 * min(1.0, shared_title / 3)
-        score *= 0.8 + 0.2 * tfac
-        attach = score >= 0.30 and (
-            (len(shared_keys) >= 2 and shared_num_w >= 1.5)
-            or (len(shared_keys) >= 1 and shared_num_w >= 1.75)
-            or (len(shared_keys) >= 3 and shared_num_w >= 0.75)
-            or (len(shared_keys) >= 5 and shared_title >= 1)
-        )
+            score_lex += 0.10
+        score_lex *= 0.75 + 0.25 * tfac
+        attach_lex = score_lex >= 0.30 and cos >= 0.15 and (len(shared_keys) >= 2 or shared_num_w >= 0.75 or cos >= 0.5) and (shared_title >= 1 or title_j >= 0.15 or cos >= 0.4 or shared_num_w >= 1.5)
+    score_ent = (0.40 * ent + 0.35 * num + 0.10 * date + 0.15 * min(1.0, shared_title / 3)) * (0.8 + 0.2 * tfac)
+    attach_ent = score_ent >= 0.30 and (
+        (len(shared_keys) >= 2 and shared_num_w >= 1.2)
+        or (len(shared_keys) >= 1 and shared_num_w >= 1.75)
+        or (len(shared_keys) >= 3 and shared_num_w >= 0.75)
+        or (len(shared_keys) >= 5 and shared_title >= 1)
+    )
+    cross = not same_lang
+    if attach_ent and not attach_lex:
+        reasons.append("entities_numbers")
+    if cross:
         reasons.append("cross_lang")
     if quote:
         reasons.append("shared_quote")
     if shared_num:
         reasons.append(f"shared_numbers:{shared_num}")
-    return PairScore(round(score, 4), round(cos, 4), round(title_j, 4), round(ent, 4), len(shared_keys), shared_title, round(num, 4), shared_num, quote, date, cross, attach, reasons)
+    score = max(score_lex, score_ent)
+    return PairScore(round(score, 4), round(cos, 4), round(title_j, 4), round(ent, 4), len(shared_keys), shared_title, round(num, 4), shared_num, quote, date, cross, attach_lex or attach_ent, reasons)
 
 
 def member_cos(a: ArtVec, b: ArtVec, idf: IdfFn) -> float:
