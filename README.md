@@ -60,7 +60,7 @@ scripts/run-demo.sh          # http://localhost:8000   логин: demo   пар
 
 ### Запуск на Windows (без WSL и Docker)
 
-Нужен **Python 3.11 или новее**: [python.org/downloads](https://www.python.org/downloads/) (в установщике отметьте **Add python.exe to PATH**) или `winget install Python.Python.3.13`. Проверка: `py --version`.
+Нужен **Python 3.11 или новее**: [python.org/downloads](https://www.python.org/downloads/) (в установщике отметьте **Add python.exe to PATH**) или `winget install Python.Python.3.13`. Проверка: `py --version`. (На Windows ARM берите Python 3.12 или новее: для 3.11 нет готовых сборок всех зависимостей.)
 
 **Вариант 1 — двойной клик.** Скачайте репозиторий (*Code → Download ZIP* или `git clone`), распакуйте и запустите `scripts\run-demo.cmd`. Первый запуск создаёт окружение и ставит зависимости (1–2 минуты), затем печатает адрес: <http://localhost:8000>, логин `demo`, пароль `smi-agent-showcase`. Остановка — `Ctrl+C` (на вопрос о завершении пакетного файла ответьте `Y`). Если Windows предупреждает, что не удалось проверить издателя, — это обычное предупреждение для файла из интернета; скрипт короткий, его можно прочитать в Блокноте (при `git clone` предупреждения нет). Аргументы передаются дальше: `scripts\run-demo.cmd --port 8080`.
 
