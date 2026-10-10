@@ -23,6 +23,7 @@ class Container:
         http: SafeHttp | None = None,
         know: Knowledge | None = None,
         llm: Any = None,
+        platform_http: Any = None,
     ):
         self.settings = settings or get_settings()
         self.clock = clock or Clock()
@@ -32,7 +33,21 @@ class Container:
         self.secrets = SecretStore(self.settings, self.audit, self.clock)
         self.http = http or SafeHttp(self.settings)
         self._llm_override = llm
+        self._platform_http = platform_http  # None → свой PlatformHttp (в демо — с локальными ответами платформ)
         self._wire()
+
+    def _account_http(self) -> Any:
+        """HTTP-клиент официальных API платформ. В демо — с локальными ответами: настоящих запросов не уходит."""
+        from .publishing.adapters.base import PlatformHttp
+
+        if self._platform_http is not None:
+            return self._platform_http
+        if self.settings.demo_mode and not self.settings.is_production:
+            from .demo.http import DemoPlatforms
+
+            self._demo_platforms: Any = DemoPlatforms()
+            return PlatformHttp(self.settings, transport=self._demo_platforms.transport())
+        return PlatformHttp(self.settings)
 
     def _wire(self) -> None:
         from .analytics.metrics import MetricsService
@@ -76,7 +91,7 @@ class Container:
         self.checks = CheckService(self)
         self.content = ContentService(self)
         self.interaction = InteractionService(self)
-        self.accounts = AccountService(self)
+        self.accounts = AccountService(self, http=self._account_http())
         self.scheduling = SchedulingService(self)
         self.killswitch = KillSwitchService(self)
         self.publishing = PublishingService(self)

@@ -129,7 +129,7 @@ def cmd_serve(a: argparse.Namespace) -> None:
         root, is_default = _prepare_demo(a)
         shown = "localhost" if _is_loopback(a.host) else a.host
         password = "smi-agent-showcase" if is_default else "значение SMI_DEMO_PASSWORD"
-        print(f"Демо-режим: вымышленные новости, песочница вместо платформ. Данные: {root}")
+        print(f"Демо-режим: вымышленные новости, локальные ответы платформ (наружу ничего не отправляется). Данные: {root}")
         print(f"Интерфейс: http://{shown}:{a.port}   логин: demo   пароль: {password}   (остановка: Ctrl+C)", flush=True)
     # use_colors=False на Windows: в старых консолях ANSI-коды цвета выводятся мусором
     uvicorn.run("smi_agent.api.app:app_factory", factory=True, host=a.host, port=a.port, log_level="info", proxy_headers=False, use_colors=False if os.name == "nt" else None)
@@ -292,7 +292,7 @@ def main(argv: list[str] | None = None) -> None:
     s_ = sub.add_parser("serve", help="запустить веб-сервер и API")
     s_.add_argument("--host", default="127.0.0.1")
     s_.add_argument("--port", type=int, default=8000)
-    s_.add_argument("--demo", action="store_true", help="демо без настройки: вымышленные новости, песочница, данные во временной папке (при каждом запуске создаются заново)")
+    s_.add_argument("--demo", action="store_true", help="демо без настройки: вымышленные новости, ответы платформ локальные, данные во временной папке (при каждом запуске создаются заново)")
     s_.add_argument("--demo-dir", default=None, help="каталог данных демо (по умолчанию: временная папка системы, подпапка smi-agent-demo)")
     s_.set_defaults(fn=cmd_serve)
     sub.add_parser("worker", help="запустить воркер фоновых заданий").set_defaults(fn=cmd_worker)
@@ -312,7 +312,7 @@ def main(argv: list[str] | None = None) -> None:
     b.add_argument("--target", default=None)
     b.add_argument("--force", action="store_true")
     b.set_defaults(fn=cmd_backup)
-    d = sub.add_parser("demo", help="демо-данные (вымышленные новости, песочница)")
+    d = sub.add_parser("demo", help="демо-данные (вымышленные новости, ответы платформ локальные)")
     d.add_argument("action", choices=["seed", "reset"])
     d.set_defaults(fn=cmd_demo)
     r = sub.add_parser("run", help="ручной запуск этапов")

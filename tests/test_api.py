@@ -231,8 +231,8 @@ def test_sources_api_rules(api):
 
 def test_end_to_end_via_api(api):
     login(api, "boss")
-    assert api.post(P(api, "/accounts"), json={"platform": "telegram", "sandbox": True, "mode": "manual", "display_name": "TG песочница"}, headers=H(api)).status_code == 200
-    assert api.post(P(api, "/accounts"), json={"platform": "whatsapp", "sandbox": True}, headers=H(api)).status_code == 422  # WhatsApp исключён
+    assert api.post(P(api, "/accounts"), json={"platform": "telegram", "token": "123456789:AAH-demo-token-demo-token-demo-token", "external_id": "-1001234567890", "mode": "manual", "display_name": "TG демо"}, headers=H(api)).status_code == 200
+    assert api.post(P(api, "/accounts"), json={"platform": "whatsapp", "token": "x", "external_id": "1"}, headers=H(api)).status_code == 422  # WhatsApp исключён
     f = api.post(P(api, "/funnel/run"), headers=H(api)).json()
     assert f["counts"]["s5"] >= 3
     props = api.get(P(api, "/proposals")).json()["proposals"]
@@ -251,14 +251,14 @@ def test_end_to_end_via_api(api):
     ap = api.post(P(api, f"/publications/{pubs[0]['id']}/approve"), json={"schedule": {"mode": "now"}}, headers=H(api))
     assert ap.status_code == 200
     det = api.get(P(api, f"/publications/{pubs[0]['id']}")).json()
-    assert det["state"] == "published" and det["external_id"].startswith("sbx-")  # отправка в фоне после подтверждения
+    assert det["state"] == "published" and det["external_id"]  # отправка в фоне после подтверждения
     assert [e["to"] for e in det["events"]][-2:] == ["publishing", "published"] and det["attempts_log"][0]["outcome"] == "success"
     assert api.post(P(api, f"/publications/{pubs[0]['id']}/cancel"), json={}, headers=H(api)).status_code == 409  # опубликованное не отменить
 
 
 def test_public_media_only_for_live_publications(api, admin):
     login(api, "boss")
-    api.post(P(api, "/accounts"), json={"platform": "instagram", "sandbox": True, "mode": "manual"}, headers=H(api))
+    api.post(P(api, "/accounts"), json={"platform": "instagram", "token": "demo-ig-token", "external_id": "17841420000000", "mode": "manual"}, headers=H(api))
     api.post(P(api, "/funnel/run"), headers=H(api))
     cpk = api.post(P(api, "/commands"), json={"text": "Беру №1 только для инстаграм"}, headers=H(api)).json()["results"][0]["data"]["content_pk"]
     from smi_agent.db.models import MediaAsset

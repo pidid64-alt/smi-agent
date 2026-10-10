@@ -10,7 +10,6 @@ from smi_agent.config import Settings
 from smi_agent.core.enums import AttemptOutcome
 from smi_agent.publishing.adapters.base import MediaFile, PlatformHttp, PublishContext
 from smi_agent.publishing.adapters.meta import FacebookAdapter, InstagramAdapter
-from smi_agent.publishing.adapters.sandbox import SandboxAdapter
 from smi_agent.publishing.adapters.telegram import TelegramAdapter
 from smi_agent.publishing.errors import PlatformError, classify_exception, classify_http
 
@@ -306,21 +305,3 @@ def test_facebook_feed_publish_and_reconcile_window():
         return httpx.Response(200, json={"data": [{"id": "1234_9", "message": "Текст", "permalink_url": "https://fb.com/x"}]})
 
     assert FacebookAdapter(_http(with_post), "https://graph.facebook.com", "v26.0", Clock(t0)).reconcile(_ctx("facebook", text="Текст", ext="1234", claimed=t0)).status == "found"
-
-
-# ---------------------------------------------------------------------------- песочница
-def test_sandbox_modes():
-    ad = SandboxAdapter("telegram")
-    ok = ad.publish(_ctx(progress={}))
-    assert ok.external_id.startswith("sbx-")
-    for mode, outcome in (("connect", AttemptOutcome.NOT_SENT), ("rate_limit", AttemptOutcome.RATE_LIMITED), ("auth", AttemptOutcome.FAILED_PERMANENT), ("bad_request", AttemptOutcome.FAILED_PERMANENT), ("timeout", AttemptOutcome.UNKNOWN)):
-        c = _ctx()
-        c.settings = {"sandbox_failure": mode}
-        with pytest.raises(PlatformError) as e:
-            ad.publish(c)
-        assert e.value.outcome == outcome
-    c = _ctx()
-    c.settings = {"sandbox_failure": "timeout_after_send"}
-    with pytest.raises(PlatformError):
-        ad.publish(c)
-    assert c.saved[-1]["sandbox_done"] and ad.reconcile(_ctx(progress=c.saved[-1])).status == "found"

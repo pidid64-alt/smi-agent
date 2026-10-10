@@ -6,6 +6,7 @@ import tempfile
 from collections.abc import Iterator
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import select
@@ -20,6 +21,9 @@ from smi_agent.ingestion.normalize import canonical_url, url_hash  # noqa: E402
 from smi_agent.knowledge import get_knowledge  # noqa: E402
 from smi_agent.security.rbac import Actor  # noqa: E402
 from tests.fixtures.corpus import ARTICLES, T0, published_at, source_row  # noqa: E402
+
+# Вымышленные токены и идентификаторы аккаунтов: вызовы платформ обслуживаются локально (mock_platform_http)
+DEMO_ACCOUNTS = {"telegram": ("-1001234567890", "123456789:AAH-demo-token-demo-token-demo-token"), "instagram": ("17841420000000", "demo-ig-token"), "facebook": ("112233445566", "demo-fb-token")}
 
 
 @pytest.fixture(scope="session")
@@ -44,10 +48,26 @@ def clock() -> FakeClock:
     return FakeClock(T0 + timedelta(hours=4))
 
 
+def mock_platform_http(ctx: Container) -> Any:
+    """Подменяет HTTP платформ на локальные ответы (демо-транспорт): тесты не ходят в сеть.
+
+    Возвращает объект демо-платформ: через `failures` можно имитировать сбой подключения,
+    таймаут или отказ платформы — адаптеры при этом настоящие, ошибки классифицируются как в бою.
+    """
+    from smi_agent.demo.http import DemoPlatforms
+    from smi_agent.publishing.adapters.base import PlatformHttp
+
+    demo = DemoPlatforms()
+    ctx.accounts.http = PlatformHttp(ctx.settings, transport=demo.transport())
+    ctx.demo_platforms = demo  # type: ignore[attr-defined]
+    return demo
+
+
 @pytest.fixture
 def ctx(settings: Settings, clock: FakeClock) -> Iterator[Container]:
     c = Container(settings, clock=clock)
     c.db.create_all()
+    mock_platform_http(c)
     yield c
     c.close()
 
@@ -179,13 +199,14 @@ def fake_llm():
 def llm_ctx(settings, clock, fake_llm):
     c = Container(settings, clock=clock, llm=fake_llm)
     c.db.create_all()
+    mock_platform_http(c)
     yield c
     c.close()
 
 
 @pytest.fixture
 def published(llm_ctx, corpus, pipeline, admin):
-    """Материал, опубликованный в песочницах трёх платформ. Возвращает (ctx, project_id, content_pk, [publication ids])."""
+    """Материал, опубликованный на трёх платформах (локальные ответы API). Возвращает (ctx, project_id, content_pk, [publication ids])."""
     from smi_agent.db.models import Proposal
 
     ctx = llm_ctx
@@ -194,8 +215,8 @@ def published(llm_ctx, corpus, pipeline, admin):
         pid = s.scalars(select(Proposal).where(Proposal.slot == 1)).first().id
     content_pk = ctx.content.create(corpus, pid, {}, admin)
     with ctx.db.session() as s:
-        for p in ("telegram", "instagram", "facebook"):
-            ctx.accounts.connect(s, admin, corpus, platform=p, sandbox=True, mode="manual", display_name=f"{p} demo")
+        for p, (ext, tok) in DEMO_ACCOUNTS.items():
+            ctx.accounts.connect(s, admin, corpus, platform=p, token=tok, external_id=ext, mode="manual", display_name=f"{p} demo")
     with ctx.db.session() as s:
         pubs = ctx.publishing.create_for_content(s, corpus, content_pk, admin)
         ids = [p.id for p in pubs]

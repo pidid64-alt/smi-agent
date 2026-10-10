@@ -1,4 +1,8 @@
-"""Демо-данные (SMI_DEMO_MODE=1): вымышленные новости, песочница вместо платформ, искусственная история и метрики. В production запрещено."""
+"""Демо-данные (SMI_DEMO_MODE=1): вымышленные новости, искусственная история и метрики. В production запрещено.
+
+Аккаунты платформ подключаются с вымышленными токенами: в демо вызовы API обслуживаются
+локально (demo/http.py), наружу ничего не отправляется.
+"""
 
 from __future__ import annotations
 
@@ -93,8 +97,10 @@ def seed_demo(ctx: Any) -> dict[str, Any]:
             ts = now - timedelta(minutes=a.minutes_ago)
             s.add(Article(project_id=pid, source_id=src.id, url=url, canonical_url=canonical_url(url), url_hash=url_hash(url), title=a.title, summary="", body=a.body, lang=f["lang"], published_at=ts, fetched_at=ts, images=[], features=f, simhash=f"{simhash(toks):016x}", has_full_text=True, content_hash=sha256_hex(a.title + a.body)))
             n_art += 1
+        demo_ids = {"telegram": ("-1001234567890", "demo-bot-token-showcase"), "instagram": ("17841420000000", "demo-ig-token-showcase"), "facebook": ("112233445566", "demo-fb-token-showcase")}
         for plat in ("telegram", "instagram", "facebook"):
-            ctx.accounts.connect(s, admin, pid, platform=plat, sandbox=True, mode="manual", display_name={"telegram": "Демо-канал Telegram", "instagram": "Демо-аккаунт Instagram", "facebook": "Демо-страница Facebook"}[plat])
+            ext, tok = demo_ids[plat]
+            ctx.accounts.connect(s, admin, pid, platform=plat, token=tok, external_id=ext, mode="manual", display_name={"telegram": "Демо-канал Telegram", "instagram": "Демо-аккаунт Instagram", "facebook": "Демо-страница Facebook"}[plat])
     _seed_history(ctx, pid, now)
     ctx.events.process_new(pid)
     with ctx.db.session() as s:

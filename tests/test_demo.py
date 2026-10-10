@@ -1,4 +1,4 @@
-"""Демо-режим: вымышленные данные, сквозной сценарий и автопилот в песочнице."""
+"""Демо-режим: вымышленные данные, сквозной сценарий и автопилот на локальных ответах платформ."""
 
 import pytest
 from sqlalchemy import select
@@ -62,7 +62,7 @@ def test_noise_is_filtered_with_reasons(demo):
         assert "Trend Score" in joined and "неподтверждённая информация" in joined  # кликбейт/реклама — ниже порога; слухи — отсеяны на этапе 2
 
 
-def test_full_flow_with_scripted_texts_passes_all_checks_and_publishes_to_sandbox(demo):
+def test_full_flow_with_scripted_texts_passes_all_checks_and_publishes_via_local_platforms(demo):
     ctx, pid = demo
     admin = Actor.user(1, "admin")
     res = ctx.interaction.handle_text(pid, admin, "Беру №1")["results"][0]
@@ -81,7 +81,7 @@ def test_full_flow_with_scripted_texts_passes_all_checks_and_publishes_to_sandbo
             ctx.publishing.approve(s, pid, p.id, admin)
     assert {r["state"] for r in ctx.publishing.run_due()} == {"published"}
     with ctx.db.read() as s:
-        assert all(p.external_id.startswith("sbx-") for p in s.scalars(select(Publication).where(Publication.origin == "user", Publication.external_id.like("sbx-%"))))
+        assert all(p.external_id for p in s.scalars(select(Publication).where(Publication.origin == "user", Publication.state == "published")))
         assert s.query(UserAction).filter(UserAction.raw_text == "Беру №1").count() == 1
 
 

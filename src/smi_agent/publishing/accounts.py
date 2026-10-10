@@ -18,7 +18,6 @@ from ..db.models import Notification, PlatformAccount, Publication
 from ..security.rbac import Actor, Perm, authorize
 from .adapters.base import PlatformHttp, PublisherAdapter
 from .adapters.meta import FacebookAdapter, InstagramAdapter
-from .adapters.sandbox import SandboxAdapter
 from .adapters.telegram import TelegramAdapter
 
 META_SCOPES = ["pages_show_list", "pages_manage_posts", "pages_read_engagement", "instagram_basic", "instagram_content_publish", "instagram_manage_insights", "business_management"]
@@ -32,8 +31,6 @@ class AccountService:
     # ---------------------------------------------------------------- адаптеры
     def adapter_for(self, account: PlatformAccount) -> PublisherAdapter:
         st = self.ctx.settings
-        if (account.settings or {}).get("sandbox"):
-            return SandboxAdapter(account.platform)
         if account.platform == Platform.TELEGRAM.value:
             return TelegramAdapter(self.http, st.telegram_api_base)
         if account.platform == Platform.INSTAGRAM.value:
@@ -50,7 +47,7 @@ class AccountService:
         return self.ctx.secrets.get(s, actor, account.secret_id, purpose=purpose)
 
     # ------------------------------------------------------------------ CRUD
-    def connect(self, s: Session, actor: Actor, project_id: int, *, platform: str, token: str = "", external_id: str = "", display_name: str = "", mode: str = "manual", sandbox: bool = False) -> PlatformAccount:
+    def connect(self, s: Session, actor: Actor, project_id: int, *, platform: str, token: str = "", external_id: str = "", display_name: str = "", mode: str = "manual") -> PlatformAccount:
         authorize(actor, Perm.ACCOUNTS_MANAGE)
         try:
             Platform(platform)
@@ -60,20 +57,18 @@ class AccountService:
             raise ValidationFailed("Режим публикации: manual | scheduled | auto")
         if mode == PublishMode.AUTO.value and actor.role != "admin" and actor.type == "user":
             raise ValidationFailed("Автоматический режим включает администратор")
-        if sandbox and self.ctx.settings.is_production and not self.ctx.settings.demo_mode:
-            raise ValidationFailed("Песочница недоступна в production")
-        if not sandbox and (not token or not external_id):
+        if not token or not external_id:
             raise ValidationFailed("Укажите токен доступа и идентификатор канала/страницы/аккаунта")
         if token and any(x in token.lower() for x in ("password", "пароль")):
             raise ValidationFailed("Пароли внешних платформ не принимаются — используйте токен API")
-        acc = PlatformAccount(project_id=project_id, platform=platform, display_name=display_name or f"{platform} {external_id}", external_id=external_id or "sandbox", status=AccountStatus.PENDING.value, mode=mode, settings={"sandbox": True} if sandbox else {}, connected_by=actor.label)
+        acc = PlatformAccount(project_id=project_id, platform=platform, display_name=display_name or f"{platform} {external_id}", external_id=external_id, status=AccountStatus.PENDING.value, mode=mode, settings={}, connected_by=actor.label)
         s.add(acc)
         s.flush()
         if token:
             rec = self.ctx.secrets.put(s, actor, project_id, f"account:{acc.id}:{platform}", token, kind="platform_token")
             acc.secret_id = rec.id
         self._verify(s, actor, acc, token)
-        self.ctx.audit.log(s, actor, "account.connect", project_id=project_id, target_type="account", target_id=acc.id, details={"platform": platform, "external_id": acc.external_id, "mode": mode, "status": acc.status, "sandbox": sandbox})
+        self.ctx.audit.log(s, actor, "account.connect", project_id=project_id, target_type="account", target_id=acc.id, details={"platform": platform, "external_id": acc.external_id, "mode": mode, "status": acc.status})
         return acc
 
     def _verify(self, s: Session, actor: Actor, acc: PlatformAccount, token: str) -> None:
@@ -151,7 +146,7 @@ class AccountService:
     def to_dict(self, acc: PlatformAccount) -> dict[str, Any]:
         return {
             "id": acc.id, "platform": acc.platform, "display_name": acc.display_name, "external_id": acc.external_id, "handle": acc.handle, "status": acc.status, "mode": acc.mode,
-            "sandbox": bool((acc.settings or {}).get("sandbox")), "scopes": acc.scopes, "connected_at": acc.connected_at.isoformat() if acc.connected_at else None,
+            "scopes": acc.scopes, "connected_at": acc.connected_at.isoformat() if acc.connected_at else None,
             "last_checked_at": acc.last_checked_at.isoformat() if acc.last_checked_at else None, "last_error": acc.last_error, "has_token": acc.secret_id is not None,
         }  # fmt: skip
 

@@ -35,7 +35,7 @@ def test_collect_records_unavailable_honestly_and_never_invents_numbers(publishe
     assert len(res) == 3 and all("views" in r["unavailable"] for r in res)
     with ctx.db.read() as s:
         snaps = list(s.scalars(select(MetricSnapshot)))
-        assert snaps and all(x.views is None and x.likes is None for x in snaps)  # песочница метрик не даёт — NULL, а не нули
+        assert snaps and all(x.views is None and x.likes is None for x in snaps)  # платформы метрик не отдают — NULL, а не нули
     ctx.clock.advance(minutes=10)
     assert ctx.metrics.collect_due(project) == []  # следующая контрольная точка ещё не наступила
 

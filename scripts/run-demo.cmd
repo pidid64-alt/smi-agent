@@ -1,6 +1,6 @@
 @echo off
 rem ----------------------------------------------------------------------------------------------
-rem  Smi-Agent demo for Windows - one double-click. Fictional news, sandbox instead of real platforms.
+rem  Smi-Agent demo for Windows - one double-click. Fictional news, local platform responses instead of real APIs.
 rem  First run: creates the .venv folder and installs the project (1-2 minutes).
 rem  Login: demo   Password: smi-agent-showcase   Stop: Ctrl+C
 rem  Extra arguments are passed on, for example:  scripts\run-demo.cmd --port 8080

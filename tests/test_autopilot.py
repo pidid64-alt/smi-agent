@@ -27,9 +27,12 @@ def _set_project(ctx, project, patch):
 
 
 def _accounts(ctx, project, admin, platforms=("telegram", "facebook"), mode="auto"):
+    from tests.conftest import DEMO_ACCOUNTS
+
     with ctx.db.session() as s:
         for plat in platforms:
-            ctx.accounts.connect(s, admin, project, platform=plat, sandbox=True, mode=mode, display_name=f"{plat} demo")
+            ext, tok = DEMO_ACCOUNTS[plat]
+            ctx.accounts.connect(s, admin, project, platform=plat, token=tok, external_id=ext, mode=mode, display_name=f"{plat} demo")
 
 
 def _policy(ctx, project, admin, enabled=True, **kw):

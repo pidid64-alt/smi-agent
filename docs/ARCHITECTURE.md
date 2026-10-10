@@ -21,7 +21,7 @@
 | 14 | Визуал | `visual/cards.py` (Pillow; обложка, «цифра», текст, источники; метка и XMP для ИИ-изображений) |
 | 15 | Проверки перед публикацией | `checks/service.py` |
 | 16 | Планирование | `publishing/scheduling.py` (оптимальное время, тихие часы, интервалы, дневные лимиты) |
-| 17 | Публикация | `publishing/service.py`, `publishing/adapters/{telegram,meta,sandbox}.py`, `publishing/accounts.py`, `publishing/killswitch.py`, `publishing/autopilot.py` |
+| 17 | Публикация | `publishing/service.py`, `publishing/adapters/{telegram,meta}.py`, `publishing/accounts.py`, `publishing/killswitch.py`, `publishing/autopilot.py` |
 | 18 | Мониторинг публикаций | `analytics/metrics.py` (`collect_due`, `collect_audience`) |
 | 19 | Статистика | `analytics/metrics.py`, `analytics/service.py` (`series`) |
 | 20 | Глубокая аналитика | `analytics/service.py` (закономерности, гео-доля, отчёты, стратегия, дашборд) |

@@ -20,7 +20,6 @@ class AccountIn(BaseModel):
     external_id: str = Field(default="", max_length=120)
     display_name: str = Field(default="", max_length=200)
     mode: str = Field(default="manual", pattern="^(manual|scheduled|auto)$")
-    sandbox: bool = False
 
 
 class TokenIn(BaseModel):
@@ -64,7 +63,7 @@ def accounts(project_id: int, actor: Actor = Depends(project_actor), ctx: Contai
 def connect_account(project_id: int, body: AccountIn, actor: Actor = Depends(project_actor), ctx: Container = Depends(get_ctx)):
     """Подключение по токену официального API. Пароли внешних платформ не принимаются и не хранятся."""
     with ctx.db.session() as s:
-        a = ctx.accounts.connect(s, actor, project_id, platform=body.platform, token=body.token, external_id=body.external_id, display_name=body.display_name, mode=body.mode, sandbox=body.sandbox)
+        a = ctx.accounts.connect(s, actor, project_id, platform=body.platform, token=body.token, external_id=body.external_id, display_name=body.display_name, mode=body.mode)
         return ctx.accounts.to_dict(a)
 
 

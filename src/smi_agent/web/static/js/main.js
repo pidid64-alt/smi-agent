@@ -76,7 +76,7 @@ function renderShell(projects) {
   const lang = h("select", { "aria-label": "Язык интерфейса", onchange: (e) => { state.lang = e.target.value; localStorage.setItem("lang", state.lang); location.reload(); } }, [["ru", "RU"], ["kk", "ҚАЗ"], ["en", "EN"]].map(([v, l]) => h("option", { value: v, selected: v === state.lang }, l)));
   const nav = h("nav", { class: "tabs", "aria-label": "Разделы" }, VIEWS.map(([key]) => h("a", { href: "#/" + key, dataset: { key } }, t(key), key === "system" ? h("span", { class: "badge-n hidden", id: "nbadge" }, "0") : null)));
   app.append(
-    state.demo ? h("div", { class: "banner demo", role: "note" }, "ДЕМО-РЕЖИМ: все новости вымышлены, публикации уходят в песочницу (никуда не отправляются), метрики и история — искусственные. Тексты — заранее подготовленные.") : null,
+    state.demo ? h("div", { class: "banner demo", role: "note" }, "ДЕМО-РЕЖИМ: все новости вымышлены, публикации уходят в локальные ответы платформ (наружу ничего не отправляется), метрики и история — искусственные. Тексты — заранее подготовленные.") : null,
     state.env === "production" ? null : h("div", { class: "banner warn hidden", id: "envwarn" }),
     h("header", { class: "topbar" }, h("div", { class: "brand" }, "Smi-Agent", h("small", null, "AI-главный редактор")), psel, modeChip, h("span", { class: "grow" }), killBtn, lang,
       h("span", { class: "small", style: { opacity: ".9" } }, state.user.display_name || state.user.username), h("button", { class: "btn sm", onclick: logout }, t("logout"))),

@@ -40,7 +40,7 @@ class PublishContext:
     idempotency_key: str
     save_progress: Any = None  # callable(dict) — сохраняет прогресс между шагами
     extras: dict[str, Any] = field(default_factory=dict)
-    settings: dict[str, Any] = field(default_factory=dict)  # настройки аккаунта (sandbox и т.д.)
+    settings: dict[str, Any] = field(default_factory=dict)  # настройки аккаунта платформы
     claimed_at: Any = None
 
 

@@ -17,25 +17,42 @@ from smi_agent.db.models import (
     PublishAttempt,
     SecretRecord,
 )
-from smi_agent.publishing.adapters.sandbox import SandboxAdapter
+from smi_agent.publishing.adapters.meta import FacebookAdapter
+from smi_agent.publishing.adapters.telegram import TelegramAdapter
 from smi_agent.publishing.service import STUCK_AFTER
 from smi_agent.security.rbac import Actor
+from tests.conftest import DEMO_ACCOUNTS
 
 PLATFORMS = ("telegram", "instagram", "facebook")
 
 
 @pytest.fixture
 def ready(llm_ctx, corpus, pipeline, admin):
-    """Материал с проходящими проверками + подключённые аккаунты-песочницы трёх платформ. Возвращает (ctx, project_id, content_pk)."""
+    """Материал с проходящими проверками + подключённые аккаунты трёх платформ. Возвращает (ctx, project_id, content_pk)."""
     ctx = llm_ctx
     pipeline(corpus)
     with ctx.db.read() as s:
         pid = s.scalars(select(Proposal).where(Proposal.slot == 1)).first().id
     content_pk = ctx.content.create(corpus, pid, {}, admin)
-    with ctx.db.session() as s:
-        for p in PLATFORMS:
-            ctx.accounts.connect(s, admin, corpus, platform=p, sandbox=True, mode="manual", display_name=f"{p} demo")
+    _connect_accounts(ctx, corpus, admin)
     return ctx, corpus, content_pk
+
+
+def _connect_accounts(ctx, project, admin, platforms=PLATFORMS, mode="manual"):
+    with ctx.db.session() as s:
+        for p in platforms:
+            ext, tok = DEMO_ACCOUNTS[p]
+            ctx.accounts.connect(s, admin, project, platform=p, token=tok, external_id=ext, mode=mode, display_name=f"{p} demo")
+
+
+def _fail(ctx, platform, mode):
+    """Сбой платформы на уровне HTTP-мока: адаптеры настоящие, исход классифицируется как в бою.
+    mode пустой — сбой снимается."""
+    key = "telegram" if platform == "telegram" else DEMO_ACCOUNTS[platform][0]
+    if mode:
+        ctx.demo_platforms.failures[key] = mode
+    else:
+        ctx.demo_platforms.failures.pop(key, None)
 
 
 def _pubs(ctx, content_pk=None):
@@ -57,12 +74,6 @@ def _approve_all(ctx, project, ids, admin, schedule=None):
             ctx.publishing.approve(s, project, i, admin, schedule=schedule)
 
 
-def _set_failure(ctx, platform, mode):
-    with ctx.db.session() as s:
-        acc = s.scalars(select(PlatformAccount).where(PlatformAccount.platform == platform)).first()
-        acc.settings = {**acc.settings, "sandbox_failure": mode}
-
-
 def test_happy_path_states_and_audit(ready, admin):
     ctx, project, cpk = ready
     ids = _create(ctx, project, cpk, admin)
@@ -73,7 +84,7 @@ def test_happy_path_states_and_audit(ready, admin):
     assert len(res) == 3 and all(r["state"] == "published" for r in res)
     with ctx.db.read() as s:
         for p in s.scalars(select(Publication)):
-            assert p.external_id.startswith("sbx-") and p.published_at and p.attempts == 1 and p.approved_by == "user:1"
+            assert p.external_id and p.published_at and p.attempts == 1 and p.approved_by == "user:1"
             states = [e.to_state for e in s.scalars(select(PublicationEvent).where(PublicationEvent.publication_id == p.id).order_by(PublicationEvent.id))]
             assert states == ["draft", "awaiting_approval", "scheduled", "publishing", "published"]
         actions = {a.action for a in s.scalars(select(AuditLog))}
@@ -97,13 +108,13 @@ def test_concurrent_workers_send_exactly_once(ready, admin, monkeypatch):
     ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
     _approve_all(ctx, project, ids, admin)
     sent = []
-    orig = SandboxAdapter.publish
+    orig = TelegramAdapter.publish
 
     def counting(self, c):
         sent.append(c.publication_id)
         return orig(self, c)
 
-    monkeypatch.setattr(SandboxAdapter, "publish", counting)
+    monkeypatch.setattr(TelegramAdapter, "publish", counting)
     results = []
 
     def worker():
@@ -121,8 +132,7 @@ def test_failed_checks_block_approval_until_fixed(ctx, corpus, pipeline, admin):
     with ctx.db.read() as s:
         pid = s.scalars(select(Proposal).where(Proposal.slot == 1)).first().id
     cpk = ctx.content.create(corpus, pid, {}, admin)  # эвристика: проверка оригинальности не пройдена
-    with ctx.db.session() as s:
-        ctx.accounts.connect(s, admin, corpus, platform="telegram", sandbox=True)
+    _connect_accounts(ctx, corpus, admin, platforms=["telegram"])
     ids = _create(ctx, corpus, cpk, admin, platforms=["telegram"])
     with ctx.db.read() as s:
         assert s.get(Publication, ids[0]).state == "needs_review"
@@ -180,7 +190,7 @@ def test_failure_modes_route_to_safe_states(ready, admin, mode, outcome, state):
     ctx, project, cpk = ready
     ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "telegram", mode)
+    _fail(ctx, "telegram", mode)
     res = ctx.publishing.run_due()[0]
     assert res["outcome"] == outcome and res["state"] == state
     with ctx.db.read() as s:
@@ -197,10 +207,10 @@ def test_retry_with_backoff_then_success(ready, admin):
     ctx, project, cpk = ready
     ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "telegram", "connect")
+    _fail(ctx, "telegram", "connect")
     assert ctx.publishing.run_due()[0]["state"] == "scheduled"
     assert ctx.publishing.run_due() == []  # пока не наступило время повтора — не трогаем
-    _set_failure(ctx, "telegram", "")
+    _fail(ctx, "telegram", "")
     ctx.clock.advance(seconds=31)
     assert ctx.publishing.run_due()[0]["state"] == "published"
     with ctx.db.read() as s:
@@ -211,7 +221,7 @@ def test_attempts_exhausted_goes_to_error(ready, admin):
     ctx, project, cpk = ready
     ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "telegram", "connect")
+    _fail(ctx, "telegram", "connect")
     for _ in range(6):
         ctx.publishing.run_due()
         ctx.clock.advance(hours=2)
@@ -222,9 +232,9 @@ def test_attempts_exhausted_goes_to_error(ready, admin):
 
 def test_unknown_outcome_forbids_resend_until_reconciled(ready, admin):
     ctx, project, cpk = ready
-    ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
+    ids = _create(ctx, project, cpk, admin, platforms=["facebook"])
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "telegram", "timeout")  # ответ не пришёл, публикации НЕТ, но система этого не знает
+    _fail(ctx, "facebook", "timeout")  # ответ не пришёл, публикации НЕТ, но система этого не знает
     assert ctx.publishing.run_due()[0]["state"] == "error"
     ctx.clock.advance(hours=3)
     assert ctx.publishing.run_due() == []  # автоповтора нет
@@ -232,7 +242,7 @@ def test_unknown_outcome_forbids_resend_until_reconciled(ready, admin):
         with pytest.raises(Conflict) as e:
             ctx.publishing.retry(s, project, ids[0], admin)
         assert e.value.code == "outcome_unknown"
-    _set_failure(ctx, "telegram", "")
+    _fail(ctx, "facebook", "")
     rec = ctx.publishing.reconcile(project, ids[0], admin)
     assert rec["status"] == "not_found" and rec["state"] == "scheduled"  # доказано: не опубликовано → повтор безопасен
     assert ctx.publishing.run_due()[0]["state"] == "published"
@@ -242,10 +252,10 @@ def test_lost_response_after_send_is_found_by_reconcile_no_duplicate(ready, admi
     ctx, project, cpk = ready
     ids = _create(ctx, project, cpk, admin, platforms=["facebook"])
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "facebook", "timeout_after_send")  # пост ВЫШЕЛ, но ответ потерян
+    _fail(ctx, "facebook", "timeout_after_send")  # пост ВЫШЕЛ, но ответ потерян
     sends = []
-    orig = SandboxAdapter.publish
-    monkeypatch.setattr(SandboxAdapter, "publish", lambda self, c: (sends.append(1), orig(self, c))[1])
+    orig = FacebookAdapter.publish
+    monkeypatch.setattr(FacebookAdapter, "publish", lambda self, c: (sends.append(1), orig(self, c))[1])
     assert ctx.publishing.run_due()[0]["state"] == "error"
     assert ctx.publishing.reconcile(project, ids[0], admin)["status"] == "found"
     assert _pubs(ctx)[0][2] == "published" and len(sends) == 1
@@ -256,16 +266,16 @@ def test_lost_response_after_send_is_found_by_reconcile_no_duplicate(ready, admi
 
 def test_manual_decisions_for_inconclusive_outcome(ready, admin):
     ctx, project, cpk = ready
-    ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
+    ids = _create(ctx, project, cpk, admin, platforms=["facebook"])
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "telegram", "timeout")
+    _fail(ctx, "facebook", "timeout")
     ctx.publishing.run_due()
     with ctx.db.session() as s:  # человек проверил канал: поста нет → повтор по его явному решению, фиксируется в аудите
         ctx.publishing.retry(s, project, ids[0], admin, confirm_not_published=True)
         assert s.get(Publication, ids[0]).state == "scheduled"
         log = s.scalars(select(AuditLog).where(AuditLog.action == "publication.retry")).one()
         assert log.details["unknown_outcome"] is True and log.details["user_confirmed_not_published"] is True
-    _set_failure(ctx, "telegram", "timeout")
+    _fail(ctx, "facebook", "timeout")
     ctx.publishing.run_due()
     with ctx.db.session() as s:  # или пост на месте → подтвердить ссылку
         ctx.publishing.confirm_published(s, project, ids[0], admin, "https://t.me/chan/5")
@@ -274,15 +284,24 @@ def test_manual_decisions_for_inconclusive_outcome(ready, admin):
 
 def test_stuck_publishing_after_crash_is_reconciled_not_resent(ready, admin):
     ctx, project, cpk = ready
-    ids = _create(ctx, project, cpk, admin, platforms=["telegram"])
+    ids = _create(ctx, project, cpk, admin, platforms=["facebook"])
     _approve_all(ctx, project, ids, admin)
     now = ctx.clock.now()
     with ctx.db.session() as s:  # имитация падения процесса после захвата
         pub = s.get(Publication, ids[0])
         pub.state, pub.claim_token, pub.claimed_at, pub.attempts = "publishing", "deadbeef", now - STUCK_AFTER - timedelta(minutes=1), 1
         s.add(PublishAttempt(publication_id=pub.id, attempt_no=1, started_at=now - timedelta(minutes=7), outcome="started"))
+    # Facebook считает «не опубликовано» только спустя 10 минут после захвата (пост в ленте может появиться с задержкой).
+    # Раньше — unknown, и повтора быть не должно.
+    early = ctx.publishing.recover_stuck()
+    assert early and early[0]["status"] == "unknown"
+    assert ctx.publishing.run_due() == []
+    ctx.clock.advance(minutes=11)
+    with ctx.db.session() as s:  # сверка повторяется: захват уже старше 10 минут
+        pub = s.get(Publication, ids[0])
+        pub.state, pub.claimed_at, pub.attempts = "publishing", ctx.clock.now() - timedelta(minutes=11), 1
     out = ctx.publishing.recover_stuck()
-    assert out and out[0]["status"] == "not_found"  # в песочнице публикации нет → повтор безопасен
+    assert out and out[0]["status"] == "not_found"  # по журналу Facebook-мока поста нет → повтор безопасен
     with ctx.db.read() as s:
         att = s.scalar(select(PublishAttempt).where(PublishAttempt.publication_id == ids[0]))
         assert att.outcome == "unknown" and att.reconcile["status"] == "not_found"
@@ -293,7 +312,7 @@ def test_one_platform_failure_does_not_block_the_others(ready, admin):
     ctx, project, cpk = ready
     ids = _create(ctx, project, cpk, admin)
     _approve_all(ctx, project, ids, admin)
-    _set_failure(ctx, "instagram", "bad_request")
+    _fail(ctx, "instagram", "bad_request")
     res = {r["publication_id"]: r for r in ctx.publishing.run_due()}
     states = {plat: st for _i, plat, st in _pubs(ctx)}
     assert states == {"telegram": "published", "instagram": "error", "facebook": "published"}
@@ -361,6 +380,9 @@ def test_passwords_of_external_platforms_are_not_accepted(ctx, project, admin):
 def test_tokens_do_not_leak_into_logs_or_audit(ready, admin, caplog):
     import logging
 
+    from smi_agent.security.redaction import install_log_redaction
+
+    install_log_redaction()  # то же, что делают API и CLI при старте: httpx пишет URL с токеном бота в пути
     ctx, project, cpk = ready
     tok = "123456789:AAH-fakefakefakefakefakefakefakefake"
     with ctx.db.session() as s:
