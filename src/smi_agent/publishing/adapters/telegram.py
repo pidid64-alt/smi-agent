@@ -10,6 +10,11 @@ from ..errors import PlatformError, classify_http
 from .base import AccountCheck, PlatformHttp, PublishContext, PublishResult, ReconcileResult
 
 
+def _is_channel(chat: dict[str, Any]) -> bool:
+    # без поля type считаем каналом: проверка строже, а не мягче
+    return chat.get("type", "channel") == "channel"
+
+
 class TelegramAdapter:
     platform = "telegram"
 
@@ -72,10 +77,30 @@ class TelegramAdapter:
             member = self._call(token, "getChatMember", data={"chat_id": external_id, "user_id": me["id"]})
         except PlatformError as e:
             return AccountCheck(False, detail=e.message, reauth=e.reauth)
-        can_post = member.get("status") == "creator" or bool(member.get("can_post_messages"))
-        if member.get("status") not in ("administrator", "creator") or not can_post:
-            return AccountCheck(False, detail="Бот должен быть администратором канала с правом публикации сообщений", reauth=True)
+        if not self._can_post(chat, member):
+            return AccountCheck(False, detail=self._no_post_detail(chat), reauth=True)
         return AccountCheck(True, display_name=chat.get("title", ""), external_id=str(chat.get("id", external_id)), handle=f"@{chat['username']}" if chat.get("username") else "", scopes=["post_messages"])
+
+    @staticmethod
+    def _can_post(chat: dict[str, Any], member: dict[str, Any]) -> bool:
+        """Право публикации по типу чата. Поле can_post_messages Telegram отдаёт только для каналов,
+        поэтому для групп и супергрупп оно не требуется."""
+        status = member.get("status")
+        if _is_channel(chat):
+            return status == "creator" or (status == "administrator" and bool(member.get("can_post_messages")))
+        if status in ("creator", "administrator"):
+            return True
+        if status == "member":
+            return chat.get("permissions", {}).get("can_send_messages", True) is not False
+        if status == "restricted":
+            return bool(member.get("can_send_messages"))
+        return False
+
+    @staticmethod
+    def _no_post_detail(chat: dict[str, Any]) -> str:
+        if _is_channel(chat):
+            return "Бот должен быть администратором канала с правом публикации сообщений"
+        return "Бот должен состоять в чате и иметь право отправлять сообщения"
 
     def fetch_audience(self, external_id: str, token: str) -> int | None:
         try:

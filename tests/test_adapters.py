@@ -126,6 +126,34 @@ def test_telegram_check_account_requires_admin_with_post_rights():
     assert not bad.ok and bad.reauth
 
 
+def test_telegram_check_account_group_admin_is_accepted_without_can_post_field():
+    """Telegram отдаёт can_post_messages только для каналов. Админ группы/супергруппы без этого поля — валиден."""
+
+    def make(chat_type, member):
+        def handler(req):
+            m = req.url.path.rsplit("/", 1)[-1]
+            res = {
+                "getMe": {"id": 42, "is_bot": True},
+                "getChat": {"id": -100123, "title": "Группа", "type": chat_type},
+                "getChatMember": member,
+            }[m]
+            return httpx.Response(200, json={"ok": True, "result": res})
+
+        return handler
+
+    for chat_type in ("group", "supergroup"):
+        ok = TelegramAdapter(_http(make(chat_type, {"status": "administrator", "is_anonymous": False}))).check_account("-100123", "t")
+        assert ok.ok, chat_type
+    # участник группы с разрешением писать — тоже подходит
+    ok = TelegramAdapter(_http(make("supergroup", {"status": "member"}))).check_account("-100123", "t")
+    assert ok.ok
+    # участник без права писать и вышедший из группы — нет
+    assert not TelegramAdapter(_http(make("supergroup", {"status": "left"}))).check_account("-100123", "t").ok
+    # в канале участник не публикует, даже если поле есть
+    bad_channel = TelegramAdapter(_http(make("channel", {"status": "member"}))).check_account("-100123", "t")
+    assert not bad_channel.ok and bad_channel.reauth
+
+
 def test_telegram_metrics_admit_what_is_unavailable():
     def handler(req):
         return httpx.Response(200, json={"ok": True, "result": 1234})
