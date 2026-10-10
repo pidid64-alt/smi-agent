@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+# Local state — never commit data, keys or secrets
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+*.key
+master.key
+backups/
+media/
+# Tooling
+node_modules/
+.DS_Store
+.idea/
+.vscode/

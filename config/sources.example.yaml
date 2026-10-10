@@ -1,0 +1,34 @@
+# Пример пользовательских источников. Скопируйте в config/sources.yaml — файл подхватывается при создании проекта
+# (`smi-agent init`, POST /api/projects), а затем источники можно менять в интерфейсе («Система → Источники»).
+# Добавление/удаление источников, языков, стран не требует правки кода (ТЗ §59).
+# Поля: key (латиница), name, kind (rss | atom | sitemap | html_list | json_feed | manual), url, country, languages, tier
+#       (primary | quality | specialized | aggregator), reliability (0–1), independence_group, aliases, is_official, is_wire, paywalled,
+#       fulltext_policy (feed_only | fetch_allowed), media_policy, enabled, category_hint, poll_interval_min, timezone, notes.
+sources:
+  - key: my_regional_news
+    name: Мои региональные новости
+    kind: rss
+    url: https://example.kz/rss.xml
+    country: KZ
+    languages: [ru, kk]
+    tier: quality
+    reliability: 0.7
+    independence_group: my_regional
+    aliases: [Мои региональные новости]
+    poll_interval_min: 20
+  - key: my_ministry_press
+    name: Пресс-служба министерства (первичный источник)
+    kind: rss
+    url: https://gov.example.kz/ru/rss
+    country: KZ
+    tier: primary
+    reliability: 0.97
+    is_official: true
+    independence_group: my_ministry
+    verified_url: false
+  # Пример HTML-списка (скрейпинг по CSS-селектору; robots.txt соблюдается):
+  # - key: local_site
+  #   name: Локальный сайт
+  #   kind: html_list
+  #   url: https://example.kz/news/
+  #   config: {item_selector: "a.news-title"}

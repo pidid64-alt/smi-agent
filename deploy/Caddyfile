@@ -1,0 +1,10 @@
+# Обратный прокси с TLS (Caddy получает и продлевает сертификаты автоматически).
+# Не забудьте SMI_TRUST_PROXY=1 и SMI_PUBLIC_URL=https://<домен> в .env — Caddy перезаписывает X-Forwarded-For.
+{$SMI_DOMAIN} {
+	encode zstd gzip
+	header -Server
+	request_body {
+		max_size 20MB
+	}
+	reverse_proxy app:8000
+}
